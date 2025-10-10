@@ -1,6 +1,19 @@
 jane:
   # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
   markInternal: true
+generate:
+  # Source of generated modules
+  modulesSource: tags
+  # Tags configuration used when generating from tags
+  tags:
+    # Postprocessors classes, leave empty to use first tag
+    postprocessors: []
+  # URLs configuration when generating from URLs is used
+  urls:
+    # Skip part of URL starring with this string
+    skipPrefix: "api"
+    # Postprocessor classes, leave empty to use URL as-is
+    postprocessors: []
 output:
   # Adjust to requirements
   namespace: Maslosoft\Api
