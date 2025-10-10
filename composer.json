@@ -1,0 +1,25 @@
+{
+    "name": "maslosoft/api-facades",
+    "description": "OpenAPI chainable facades generator",
+    "require-dev": {
+        "codeception/codeception": "^5",
+        "codeception/module-asserts": "^3",
+        "codeception/module-phpbrowser": "*"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Maslosoft\\ApiFacades\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Peter Maselkowski",
+            "email": "office@maslosoft.com"
+        }
+    ],
+    "require": {
+        "maslosoft/embedi": "^2",
+        "maslosoft/light": "^1"
+    }
+}

@@ -3,21 +3,26 @@ jane:
   markInternal: true
 generate:
   # Source of generated modules
-  modulesSource: tags
-  # Tags configuration used when generating from tags
-  tags:
-    # Postprocessors classes, leave empty to use first tag
-    postprocessors: []
-  # URLs configuration when generating from URLs is used
-  urls:
-    # Skip part of URL starring with this string
-    skipPrefix: "api"
-    # Postprocessor classes, leave empty to use URL as-is
-    postprocessors: []
+  source: tags
+  sources:
+    # Tags configuration used when generating from tags
+    tags:
+      # Processors classes
+      processors:
+        firstTag:
+          class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
+    # URLs configuration when generating from URLs is used
+    url:
+      # Processor classes
+      processors:
+        trimUrl:
+          class: Maslosoft\ApiFacades\Processors\Url\FirstTag
+          # Skip part of URL starring with this string
+          prefix: "api"
 output:
   # Adjust to requirements
   namespace: Maslosoft\Api
-  # Discover directory based on composer.json
-  discoverDirectory: true
+  # Discover directory based on PSR-4 composer.json autoload
+  discoverOutput: true
   # If not empty, this output directory will be used
-  directory: ""
+  output: ""
