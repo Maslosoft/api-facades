@@ -1,0 +1,10 @@
+jane:
+  # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
+  markInternal: true
+output:
+  # Adjust to requirements
+  namespace: Maslosoft\Api
+  # Discover directory based on composer.json
+  discoverDirectory: true
+  # If not empty, this output directory will be used
+  directory: ""
