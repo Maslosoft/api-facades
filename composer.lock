@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c5a0388f8082d250e66b77a7f5f1d59e",
+    "content-hash": "772810db2e4fc4631524c6b70110a9dd",
     "packages": [
         {
             "name": "maslosoft/embedi",
@@ -4362,7 +4362,9 @@
     "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": {},
+    "platform": {
+        "php": ">=7.4"
+    },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

@@ -19,7 +19,8 @@
         }
     ],
     "require": {
-        "maslosoft/embedi": "^2",
-        "maslosoft/light": "^1"
+        "php": ">=7.4",
+        "maslosoft/embedi": "^2|^3",
+        "maslosoft/light": "^1|^2"
     }
 }

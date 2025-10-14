@@ -16,7 +16,7 @@ generate:
       # Processor classes
       processors:
         trimUrl:
-          class: Maslosoft\ApiFacades\Processors\Url\FirstTag
+          class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
           # Skip part of URL starring with this string
           prefix: "api"
 output:
