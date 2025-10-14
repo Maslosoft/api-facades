@@ -1,24 +1,30 @@
 jane:
   # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
   markInternal: true
+input:
+  location: http://127.0.0.1:8000/openapi.json
 generate:
-  # Source of generated modules
-  source: tags
-  sources:
-    # Tags configuration used when generating from tags
-    tags:
-      # Processors classes
+  modules:
+    #
+    namer:
+      class: Maslosoft\ApiFacades\Namers\Module\UrlNamer
       processors:
-        firstTag:
-          class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
-    # URLs configuration when generating from URLs is used
-    url:
-      # Processor classes
-      processors:
-        trimUrl:
-          class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
-          # Skip part of URL starring with this string
-          prefix: "api"
+        # Tags configuration used when generating from tags
+        tags:
+          # Processors classes
+          processors:
+            firstTag:
+              class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
+        # URLs configuration when generating from URLs is used
+        url:
+          # Processor classes
+          processors:
+            trimUrl:
+              class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
+              # Skip part of URL starring with this string
+              prefix: "api"
+  operations:
+    namer: 
 output:
   # Adjust to requirements
   namespace: Maslosoft\Api

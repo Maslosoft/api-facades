@@ -20,7 +20,13 @@
     ],
     "require": {
         "php": ">=7.4",
+        "jane-php/open-api-3": "*",
         "maslosoft/embedi": "^2|^3",
         "maslosoft/light": "^1|^2"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     }
 }

@@ -14,14 +14,45 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/admin/runs/{run_id}": {
-      "delete": {
+    "/api/admin/runs": {
+      "get": {
         "tags": [
           "admin"
         ],
-        "summary": "Delete a simulation run",
-        "description": "Admin-only delete.",
-        "operationId": "delete_run_api_admin_runs__run_id__delete",
+        "summary": "Get all simulation runs",
+        "description": "List of all runs",
+        "operationId": "admin.Runs",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Admin.Runs"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/run/{id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get a simulation run details",
+        "description": "Run details",
+        "operationId": "admin.Run",
         "security": [
           {
             "HTTPBearer": []
@@ -29,12 +60,58 @@
         ],
         "parameters": [
           {
-            "name": "run_id",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Run Id"
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tenant"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete a simulation run",
+        "description": "Admin-only delete.",
+        "operationId": "admin.RunDelete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
             }
           }
         ],
@@ -48,7 +125,7 @@
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "title": "Response Delete Run Api Admin Runs Run Id Delete"
+                  "title": "Response Admin.Rundelete"
                 }
               }
             }
@@ -73,7 +150,7 @@
         ],
         "summary": "Get current tenant profile",
         "description": "Even though the router already requires a user token,\ninjecting the SAME dependency here gives us the cached Principal.",
-        "operationId": "get_profile_api_tenant_profile_get",
+        "operationId": "tenant.Profile",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -82,7 +159,7 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Get Profile Api Tenant Profile Get"
+                  "title": "Response Tenant.Profile"
                 }
               }
             }
@@ -102,7 +179,7 @@
         ],
         "summary": "List my runs",
         "description": "User-only listing.",
-        "operationId": "list_my_runs_api_tenant_runs_get",
+        "operationId": "tenant.Runs",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -114,7 +191,7 @@
                     "type": "object"
                   },
                   "type": "array",
-                  "title": "Response List My Runs Api Tenant Runs Get"
+                  "title": "Response Tenant.Runs"
                 }
               }
             }
@@ -142,6 +219,52 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Tenant": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TenantType"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "blocked": {
+            "type": "boolean",
+            "title": "Blocked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "type",
+          "active",
+          "blocked"
+        ],
+        "title": "Tenant"
+      },
+      "TenantType": {
+        "type": "string",
+        "enum": [
+          "real",
+          "simulated",
+          "demo"
+        ],
+        "title": "TenantType"
       },
       "ValidationError": {
         "properties": {
