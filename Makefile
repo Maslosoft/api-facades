@@ -12,7 +12,12 @@ CODECEPT ?= vendor/bin/codecept
 
 help:
 	@printf "%s\n" "Commands:" \
-	"  make unit <Name>                # Generate codeception unit test"
+	"  make unit <Name>                # Generate codeception unit test" \
+	"  make test                       # Run all tests"
+
+
+test: ## make tests
+	$(PHP) vendor/bin/codecept run --debug
 
 unit: ## make unit <Name>
 	@name="$(strip $(firstword $(filter-out $@,$(MAKECMDGOALS))))"; \
