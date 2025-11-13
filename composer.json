@@ -22,7 +22,9 @@
         "php": ">=7.4",
         "jane-php/open-api-3": "*",
         "maslosoft/embedi": "^2|^3",
-        "maslosoft/light": "^1|^2"
+        "maslosoft/light": "^1|^2",
+        "symfony/yaml": ">2.6",
+        "maslosoft/cli-shared": "*"
     },
     "config": {
         "allow-plugins": {

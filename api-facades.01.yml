@@ -5,24 +5,9 @@ input:
   location: http://127.0.0.1:8000/openapi.json
 generate:
   modules:
-    #
+    # Module namer
     namer:
       class: Maslosoft\ApiFacades\Namers\Module\UrlNamer
-      processors:
-        # Tags configuration used when generating from tags
-        tags:
-          # Processors classes
-          processors:
-            firstTag:
-              class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
-        # URLs configuration when generating from URLs is used
-        url:
-          # Processor classes
-          processors:
-            trimUrl:
-              class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
-              # Skip part of URL starring with this string
-              prefix: "api"
   operations:
     namer:
       class: Maslosoft\ApiFacades\Namers\Operations\OperationId

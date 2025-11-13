@@ -4,8 +4,10 @@ namespace Maslosoft\ApiFacades\Build;
 
 class Builder
 {
-	public function __construct()
-	{
+	private Config $config;
 
+	public function __construct(Config $config)
+	{
+		$this->config = $config;
 	}
 }
