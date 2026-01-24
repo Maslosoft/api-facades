@@ -41,9 +41,9 @@ class Config
 		$this->filename = $path;
 		$this->path = dirname($path);
 		$this->raw = $cfg;
-		$this->jane = new JaneConfig((array)($cfg['jane'] ?? []), $this);
-		$this->input = new InputConfig((array)($cfg['input'] ?? []), $this);
-		$this->output = new OutputConfig((array)($cfg['output'] ?? []), $this);
+		$this->jane = new JaneConfig($this, (array)($cfg['jane'] ?? []));
+		$this->input = new InputConfig($this, (array)($cfg['input'] ?? []));
+		$this->output = new OutputConfig($this, (array)($cfg['output'] ?? []));
 		$this->generate = (array)($cfg['generate'] ?? []);
 
 		if ($this->input->location === '')

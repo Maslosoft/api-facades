@@ -8,7 +8,7 @@ use Tests\Support\Unit;
 use Tests\Support\UnitTester;
 use Maslosoft\ApiFacades\Build\Config;
 
-class UrlTest extends Unit
+class BuilderUrlTest extends Unit
 {
 
     protected UnitTester $tester;
@@ -27,6 +27,8 @@ class UrlTest extends Unit
 
 		$this->assertDirectoryExists("$path/generated.01");
 		$this->assertFileExists("$path/generated/Client01.php");
+
+		$this->assertClassExists('Acme\\Test01\\Client01');
 
 		$this->markTestIncomplete("This test has not been finished yet.");
     }

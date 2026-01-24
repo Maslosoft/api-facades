@@ -54,7 +54,7 @@ class OutputConfig implements ConfigAware
 		$this->discoverOutput = (bool)($data['discoverOutput'] ?? false);
 		if($this->discoverOutput)
 		{
-			$this->path = (new ComposerDiscover)->discover($this->namespace);
+			$this->path = (new ComposerDiscover($config))->discover($this->namespace);
 		}
 		else
 		{

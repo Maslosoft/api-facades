@@ -28,7 +28,7 @@ generate:
       class: Maslosoft\ApiFacades\Namers\Operations\OperationId
 output:
   # Adjust to requirements
-  namespace: Maslosoft\Api
+  namespace: Acme\Test01
   # API facade Root class
   class: Client01
   # Discover directory based on PSR-4 composer.json autoload

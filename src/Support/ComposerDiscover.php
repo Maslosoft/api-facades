@@ -2,22 +2,45 @@
 
 namespace Maslosoft\ApiFacades\Support;
 
+use JsonException;
+use Maslosoft\ApiFacades\Build\Config;
 use Maslosoft\ApiFacades\Exceptions\ConfigurationException;
+use Maslosoft\ApiFacades\Interfaces\ConfigAware;
+use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
+use Maslosoft\Cli\Shared\Io;
 
-class ComposerDiscover
+class ComposerDiscover implements ConfigAware
 {
+	use ConfigAwareTrait;
+	public function __construct(Config $config)
+	{
+		$this->config = $config;
+	}
+
+	/**
+	 * Discover project namespace folder location based on PSR and namespace
+	 * For example if composer contains PSR-4:
+	 *
+	 * ```json
+	 *     "autoload": {
+	 *        "psr-4": {
+	 *            "Acme\\Project\\": "src/"
+	 *        },
+	 * ```
+	 *
+	 * And API namespace is `Acme\Project\Api`, the path should point to:
+	 *
+	 * ```bash
+	 * /project-root/src/Api
+	 * ```
+	 * If namespace of API does not match any autoload, it will throw exception
+	 *
+	 * @throws ConfigurationException
+	 * @param string $namespace
+	 * @return string
+	 */
 	public function discover(string $namespace): string
 	{
-		// TODO: Discover project namespace folder location based on PSR and namespace
-		// For example if composer contains PSR-4:
-		//     "autoload": {
-		//        "psr-4": {
-		//            "Acme\\Project\\": "src/"
-		//        },
-		// And API namespace is Acme\Project\Api, the path should point to:
-		// /project-root/src/Api
-		// If namespace of API does not match any autoload, throw exception
-
 		$composerPath = $this->findComposerJson();
 		$composer = $this->readComposerJson($composerPath);
 		$autoload = (array)($composer['autoload']['psr-4'] ?? []);
@@ -76,10 +99,15 @@ class ComposerDiscover
 
 	private function findComposerJson(): string
 	{
-		$path = getcwd();
-		if ($path === false)
+		$path = $this->config->path;
+		if (empty($path))
 		{
 			throw new ConfigurationException('Unable to determine current working directory.');
+		}
+
+		if(!Io::dirExists($path))
+		{
+			throw new ConfigurationException('Working directory does not exist.');
 		}
 
 		while (true)
@@ -115,7 +143,7 @@ class ComposerDiscover
 		{
 			return (array)json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
 		}
-		catch (\JsonException $exception)
+		catch (JsonException $exception)
 		{
 			throw new ConfigurationException("Invalid composer.json at '{$composerPath}': {$exception->getMessage()}");
 		}
