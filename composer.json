@@ -10,7 +10,10 @@
     "autoload": {
         "psr-4": {
             "Maslosoft\\ApiFacades\\": "src/"
-        }
+        },
+        "files": [
+            "src/Logging.php"
+        ]
     },
     "authors": [
         {
@@ -19,12 +22,13 @@
         }
     ],
     "require": {
-        "php": ">=7.4",
+        "php": ">=8.3",
         "jane-php/open-api-3": "*",
+        "maslosoft/cli-shared": "*",
         "maslosoft/embedi": "^2|^3",
         "maslosoft/light": "^1|^2",
-        "symfony/yaml": ">2.6",
-        "maslosoft/cli-shared": "*"
+        "monolog/monolog": "^3.10",
+        "symfony/yaml": ">2.6"
     },
     "config": {
         "allow-plugins": {

@@ -1,4 +1,4 @@
-# Makefile for ved operations
+# Makefile for dev operations
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 MAKEFLAGS += --no-builtin-rules --warn-undefined-variables
