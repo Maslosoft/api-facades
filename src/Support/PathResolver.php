@@ -17,10 +17,28 @@ class PathResolver implements ConfigAware
 
 	public function resolve(string $path): string
 	{
-		// TODO:
-		// If starts with http, leave as-is - its URL
-		// If starts with /, leave as-is - absolute URL
-		// Otherways, resolve path based on $config->path
-		return $path;
+		if ($path === '')
+		{
+			return $path;
+		}
+
+		$lowerPath = strtolower($path);
+		if (str_starts_with($lowerPath, 'http://') || str_starts_with($lowerPath, 'https://'))
+		{
+			return $path;
+		}
+		if (str_starts_with($path, '/'))
+		{
+			return $path;
+		}
+		if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path))
+		{
+			return $path;
+		}
+
+		$basePath = rtrim($this->config->path, DIRECTORY_SEPARATOR);
+		$relativePath = ltrim($path, DIRECTORY_SEPARATOR);
+
+		return $basePath . DIRECTORY_SEPARATOR . $relativePath;
 	}
 }
