@@ -1,0 +1,35 @@
+jane:
+  # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
+  markInternal: true
+input:
+  location: ./openapi.json
+generate:
+  modules:
+    #
+    namer:
+      class: Maslosoft\ApiFacades\Namers\Module\UrlNamer
+      processors:
+        # Tags configuration used when generating from tags
+        tags:
+          # Processors classes
+          processors:
+            firstTag:
+              class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
+        # URLs configuration when generating from URLs is used
+        url:
+          # Processor classes
+          processors:
+            trimUrl:
+              class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
+              # Skip part of URL starring with this string
+              prefix: "api"
+  operations:
+    namer:
+      class: Maslosoft\ApiFacades\Namers\Operations\OperationId
+output:
+  # Adjust to requirements
+  namespace: Maslosoft\Api
+  # Discover directory based on PSR-4 composer.json autoload
+  discoverOutput: true
+  # If not empty, this output directory will be used
+  output: ""

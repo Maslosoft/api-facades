@@ -4,8 +4,7 @@ namespace Maslosoft\ApiFacades\Processors\Url;
 
 use Maslosoft\ApiFacades\Interfaces\Processor;
 
-class TrimPrefix
-implements Processor
+class TrimPrefix implements Processor
 {
 	private string $prefix;
 

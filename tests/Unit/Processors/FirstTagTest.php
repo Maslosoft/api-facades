@@ -10,7 +10,8 @@ class FirstTagTest extends Unit
 	public function testReturnsFirstTag(): void
 	{
 		$processor = new FirstTag();
-		$this->assertSame('admin', $processor->process(['admin', 'tenant']));
+		$processor->setTags(['admin', 'tenant']);
+		$this->assertSame('admin', $processor->process(''));
 	}
 
 	public function testReturnsEmptyWhenNoTags(): void

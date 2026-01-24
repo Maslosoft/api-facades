@@ -11,13 +11,15 @@ class UrlNamerTest extends Unit
 {
 	public function testUsesUrlPathByDefault(): void
 	{
-		$namer = new UrlNamer('/api/admin/runs', ['admin'], new TrimPrefix('api'), new FirstTag());
-		$this->assertSame('admin', $namer->getName());
+		$namer = new UrlNamer('/api/admin/runs', ['admin'], [new TrimPrefix('api'), new FirstTag()]);
+		codecept_debug($namer->getName());
+		$this->assertSame('admin/runs', $namer->getName());
 	}
 
 	public function testFallsBackToTagWhenPathEmpty(): void
 	{
-		$namer = new UrlNamer('/', ['tenant'], new TrimPrefix('api'), new FirstTag());
+		$namer = new UrlNamer('/', ['tenant'], [new TrimPrefix('api'), new FirstTag()]);
+		codecept_debug($namer->getName());
 		$this->assertSame('tenant', $namer->getName());
 	}
 }

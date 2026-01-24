@@ -10,4 +10,9 @@ class Builder
 	{
 		$this->config = $config;
 	}
+
+	public function build(): void
+	{
+		// TODO: Implement actual code generation based on config
+	}
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use Maslosoft\Testing\Reflection\ReflectionAssertionsTrait;
+
 /**
  * Inherited Methods
  * @method void wantTo($text)
@@ -21,7 +23,8 @@ namespace Tests\Support;
 */
 class UnitTester extends \Codeception\Actor
 {
-    use _generated\UnitTesterActions;
+    use _generated\UnitTesterActions,
+		ReflectionAssertionsTrait;
 
     /**
      * Define custom actions here

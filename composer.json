@@ -4,7 +4,8 @@
     "require-dev": {
         "codeception/codeception": "^5",
         "codeception/module-asserts": "^3",
-        "codeception/module-phpbrowser": "*"
+        "codeception/module-phpbrowser": "*",
+        "maslosoft/codeception-reflection-asserts": "^1.0"
     },
     "license": "MIT",
     "autoload": {
