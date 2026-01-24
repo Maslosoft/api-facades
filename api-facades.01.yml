@@ -17,4 +17,4 @@ output:
   # Discover directory based on PSR-4 composer.json autoload
   discoverOutput: true
   # If not empty, this output directory will be used
-  output: ""
+  path: ""

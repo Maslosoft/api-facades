@@ -12,27 +12,45 @@ use Maslosoft\ApiFacades\Interfaces\ConfigReader;
 
 class Config
 {
+	/**
+	 * Loaded config filename with path
+	 * @var string
+	 */
+	public string $filename;
+
+	/**
+	 * Loaded config directory
+	 * @var string
+	 */
+	public string $path;
+
 	public JaneConfig $jane;
+
 	public InputConfig $input;
+
 	public OutputConfig $output;
+
 	/** @var array<string,mixed> */
 	public array $generate;
+
 	/** @var array<string,mixed> */
 	public array $raw;
 
-	protected function __construct(array $cfg)
+	protected function __construct(array $cfg, string $path)
 	{
+		$this->filename = $path;
+		$this->path = dirname($path);
 		$this->raw = $cfg;
-		$this->jane = new JaneConfig((array)($cfg['jane'] ?? []));
-		$this->input = new InputConfig((array)($cfg['input'] ?? []));
-		$this->output = new OutputConfig((array)($cfg['output'] ?? []));
+		$this->jane = new JaneConfig((array)($cfg['jane'] ?? []), $this);
+		$this->input = new InputConfig((array)($cfg['input'] ?? []), $this);
+		$this->output = new OutputConfig((array)($cfg['output'] ?? []), $this);
 		$this->generate = (array)($cfg['generate'] ?? []);
 
-		if($this->input->location === '')
+		if ($this->input->location === '')
 		{
 			throw new ConfigurationException('Input location is required.');
 		}
-		if($this->output->namespace === '')
+		if ($this->output->namespace === '')
 		{
 			throw new ConfigurationException('Output namespace is required.');
 		}
@@ -41,46 +59,53 @@ class Config
 	/**
 	 * Load config from path
 	 * @param string $path
-	 * @return Config
+	 * @return static
 	 */
-	public static function load(string $path): Config
+	public static function load(string $path): static
 	{
-		if(!file_exists($path))
+		if (!file_exists($path))
 		{
 			throw new ConfigurationException("Configuration file '{$path}' does not exist.");
 		}
-		if(is_dir($path))
+		if (is_dir($path))
 		{
 			throw new ConfigurationException("Configuration file '{$path}' is a directory.");
 		}
-		if(!is_readable($path))
+		if (!is_readable($path))
 		{
 			throw new ConfigurationException("Configuration file '{$path}' is not readable.");
 		}
 		$cfg = [];
-		foreach(static::getReaders() as $reader)
+		$couldRead = false;
+		foreach (static::getReaders() as $reader)
 		{
-			if($reader->canRead($path))
+			if ($reader->canRead($path))
 			{
+				$couldRead = true;
 				$cfg = $reader->read($path);
 				break;
 			}
 		}
-		if(empty($cfg))
+		if (!$couldRead)
+		{
+			throw new ConfigurationException("Configuration file type for '{$path}' is not supported.");
+		}
+		if (empty($cfg))
 		{
 			throw new ConfigurationException("Configuration from file '{$path}' is empty.");
 		}
-		return self::create($cfg);
+		return self::create($cfg, $path);
 	}
 
 	/**
 	 * Create configuration from provided array
-	 * @param array $cfg
-	 * @return Config
+	 * @param array  $cfg
+	 * @param string $path
+	 * @return static
 	 */
-	private static function create(array $cfg): Config
+	private static function create(array $cfg, string $path): static
 	{
-		return new static($cfg);
+		return new static($cfg, $path);
 	}
 
 	/**

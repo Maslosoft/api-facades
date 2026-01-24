@@ -2,11 +2,18 @@
 
 namespace Maslosoft\ApiFacades\Config;
 
+use Maslosoft\ApiFacades\Build\Config;
+use Maslosoft\ApiFacades\Interfaces\ConfigAware;
+use Maslosoft\ApiFacades\Support\PathResolver;
+use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
+
 /**
  * Input source configuration.
  */
-class InputConfig
+class InputConfig implements ConfigAware
 {
+	use ConfigAwareTrait;
+
 	/**
 	 * Location of OpenAPI spec or other input.
 	 *
@@ -19,8 +26,9 @@ class InputConfig
 	/**
 	 * @param array<string,mixed> $data
 	 */
-	public function __construct(array $data = [])
+	public function __construct(Config $config, array $data = [])
 	{
-		$this->location = (string)($data['location'] ?? '');
+		$this->config = $config;
+		$this->location = (new PathResolver($config))->resolve((string)($data['location'] ?? ''));
 	}
 }

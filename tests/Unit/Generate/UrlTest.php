@@ -20,8 +20,14 @@ class UrlTest extends Unit
     // tests
     public function testGeneratingFromUrl(): void
     {
-		$builder = new Builder(Config::load(__DIR__ . '/data/api-facades.01.yml'));
+		$path = __DIR__ . '/data';
+		$builder = new Builder(Config::load("$path/api-facades.01.yml"));
 		$this->assertMethodExists($builder, 'build');
-		$this->markTestIncomplete("This test has not been implemented yet.");
+		$builder->build();
+
+		$this->assertDirectoryExists("$path/generated.01");
+		$this->assertFileExists("$path/generated/Client01.php");
+
+		$this->markTestIncomplete("This test has not been finished yet.");
     }
 }

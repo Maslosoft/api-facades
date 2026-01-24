@@ -2,7 +2,7 @@ jane:
   # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
   markInternal: true
 input:
-  location: ./openapi.json
+  location: openapi.json
 generate:
   modules:
     #
@@ -29,7 +29,9 @@ generate:
 output:
   # Adjust to requirements
   namespace: Maslosoft\Api
+  # API facade Root class
+  class: Client01
   # Discover directory based on PSR-4 composer.json autoload
-  discoverOutput: true
+  discoverOutput: false
   # If not empty, this output directory will be used
-  output: ""
+  path: "generated.01"
