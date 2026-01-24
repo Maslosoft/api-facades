@@ -1,6 +1,6 @@
 <?php
 
-namespace Maslosoft\ApiFacades\Build;
+namespace Maslosoft\ApiFacades;
 
 use Maslosoft\ApiFacades\Config\InputConfig;
 use Maslosoft\ApiFacades\Config\JaneConfig;

@@ -2,7 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Traits;
 
-use Maslosoft\ApiFacades\Build\Config;
+use Maslosoft\ApiFacades\Config;
 
 trait ConfigAwareTrait
 {

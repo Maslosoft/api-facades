@@ -4,9 +4,9 @@
 namespace Tests\Unit\Generate;
 
 use Maslosoft\ApiFacades\Build\Builder;
+use Maslosoft\ApiFacades\Config;
 use Tests\Support\Unit;
 use Tests\Support\UnitTester;
-use Maslosoft\ApiFacades\Build\Config;
 
 class BuilderUrlTest extends Unit
 {

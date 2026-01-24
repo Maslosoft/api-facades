@@ -2,7 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Config;
 
-use Maslosoft\ApiFacades\Build\Config;
+use Maslosoft\ApiFacades\Config;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
 use Maslosoft\ApiFacades\Support\ComposerDiscover;
 use Maslosoft\ApiFacades\Support\PathResolver;

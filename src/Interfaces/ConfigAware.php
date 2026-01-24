@@ -2,7 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Interfaces;
 
-use Maslosoft\ApiFacades\Build\Config;
+use Maslosoft\ApiFacades\Config;
 
 interface ConfigAware
 {

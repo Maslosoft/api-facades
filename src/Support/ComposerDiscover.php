@@ -3,7 +3,7 @@
 namespace Maslosoft\ApiFacades\Support;
 
 use JsonException;
-use Maslosoft\ApiFacades\Build\Config;
+use Maslosoft\ApiFacades\Config;
 use Maslosoft\ApiFacades\Exceptions\ConfigurationException;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
 use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;

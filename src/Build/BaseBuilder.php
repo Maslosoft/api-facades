@@ -2,6 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Build;
 
+use Maslosoft\ApiFacades\Config;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
 use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
 
