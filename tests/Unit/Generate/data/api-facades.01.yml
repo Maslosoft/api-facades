@@ -17,9 +17,11 @@ generate:
           class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
           # Skip part of URL starring with this string
           prefix: "api"
+    baseClass: Maslosoft\ApiFacades\Base\GenericModule
   operations:
     namer:
       class: Maslosoft\ApiFacades\Namers\Operations\OperationId
+    baseClass: Maslosoft\ApiFacades\Base\GenericOperation
 output:
   # Adjust to requirements
   namespace: Acme\Test01

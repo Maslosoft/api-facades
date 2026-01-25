@@ -4,6 +4,7 @@ namespace Maslosoft\ApiFacades\Config;
 
 use Maslosoft\ApiFacades\Config;
 use Maslosoft\ApiFacades\Config\GenerateConfigs\ModuleConfig;
+use Maslosoft\ApiFacades\Config\GenerateConfigs\OperationConfig;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
 use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
 
@@ -11,7 +12,10 @@ class GenerateConfig implements ConfigAware
 {
 	use ConfigAwareTrait;
 
-	public ModuleConfig $module;
+	public ModuleConfig $modules;
+
+	public OperationConfig $operations;
+
 
 	/**
 	 * @param Config              $config
@@ -20,6 +24,7 @@ class GenerateConfig implements ConfigAware
 	public function __construct(Config $config, array $data = [])
 	{
 		$this->config = $config;
-		$this->module = new ModuleConfig($config, (array)$data['modules']);
+		$this->modules = new ModuleConfig($config, (array)$data['modules']);
+		$this->operations = new OperationConfig($config, (array)$data['operations']);
 	}
 }

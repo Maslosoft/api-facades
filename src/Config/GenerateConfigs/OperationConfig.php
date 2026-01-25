@@ -2,18 +2,18 @@
 
 namespace Maslosoft\ApiFacades\Config\GenerateConfigs;
 
-use Maslosoft\ApiFacades\Base\GenericModule;
+use Maslosoft\ApiFacades\Base\GenericOperation;
 use Maslosoft\ApiFacades\Config;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
-use Maslosoft\ApiFacades\Interfaces\ModuleNamer;
+use Maslosoft\ApiFacades\Interfaces\OperationNamer;
 use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
 use Maslosoft\EmbeDi\EmbeDi;
 
-class ModuleConfig implements ConfigAware
+class OperationConfig implements ConfigAware
 {
 	use ConfigAwareTrait;
 
-	public ModuleNamer $namer;
+	public OperationNamer $namer;
 
 	public string $baseClass;
 
@@ -24,10 +24,10 @@ class ModuleConfig implements ConfigAware
 	public function __construct(Config $config, array $data = [])
 	{
 		$this->config = $config;
-		$this->baseClass = $data['baseClass'] ?? GenericModule::class;
+		$this->baseClass = $data['baseClass'] ?? GenericOperation::class;
 		$namerCfg = $data['namer'];
 		$namer = EmbeDi::fly()->apply($namerCfg);
-		assert($namer instanceof ModuleNamer);
+		assert($namer instanceof OperationNamer);
 		$this->namer = $namer;
 
 		foreach ($namerCfg['processors'] as $processorName => $processorCfg)
