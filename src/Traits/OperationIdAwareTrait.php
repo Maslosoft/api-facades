@@ -11,7 +11,7 @@ trait OperationIdAwareTrait
 		return $this->operationId;
 	}
 
-	public function setOperationId(string $operationId): OperationIdAwareTrait
+	public function setOperationId(string $operationId): static
 	{
 		$this->operationId = $operationId;
 		return $this;

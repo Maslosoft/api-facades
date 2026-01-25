@@ -121,11 +121,195 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Admin.Rundelete"
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/tenant/block/{id}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Block a Tenant",
+        "operationId": "admin.BlockPost",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/tenant/unblock/{id}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Unlock a Tenant",
+        "operationId": "admin.BlockPost",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/tenant/activate/{id}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Activate a Tenant",
+        "operationId": "admin.ActivatePost",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/tenant/deactivate/{id}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Deactivate a Tenant",
+        "operationId": "admin.DeactivatePost",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
                 }
               }
             }
@@ -207,6 +391,21 @@
   },
   "components": {
     "schemas": {
+      "AckResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "default": "ok"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "AckResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -219,6 +418,14 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ResponseStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error"
+        ],
+        "title": "ResponseStatus"
       },
       "Tenant": {
         "properties": {

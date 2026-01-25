@@ -30,7 +30,7 @@ class OperationConfig implements ConfigAware
 		assert($namer instanceof OperationNamer);
 		$this->namer = $namer;
 
-		foreach ($namerCfg['processors'] as $processorName => $processorCfg)
+		foreach ($namerCfg['processors'] ?? [] as $processorName => $processorCfg)
 		{
 			$this->namer->processors[$processorName] = EmbeDi::fly()->apply($processorCfg);
 		}

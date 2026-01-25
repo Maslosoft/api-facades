@@ -2,16 +2,13 @@
 
 namespace Maslosoft\ApiFacades\Namers\Operations;
 
+use Maslosoft\ApiFacades\Interfaces\OperationIdAware;
 use Maslosoft\ApiFacades\Interfaces\OperationNamer;
+use Maslosoft\ApiFacades\Traits\OperationIdAwareTrait;
 
-class OperationId implements OperationNamer
+class OperationId implements OperationNamer, OperationIdAware
 {
-	private string $operationId;
-
-	public function __construct(string $operationId)
-	{
-		$this->operationId = $operationId;
-	}
+	use OperationIdAwareTrait;
 
 	public function getName(): string
 	{

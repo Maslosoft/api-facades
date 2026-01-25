@@ -9,13 +9,15 @@ class OperationIdTest extends Unit
 {
 	public function testUsesLastSegmentOfOperationId(): void
 	{
-		$namer = new OperationId('admin.RunDelete');
+		$namer = new OperationId();
+		$namer->setOperationId('admin.RunDelete');
 		$this->assertSame('runDelete', $namer->getName());
 	}
 
 	public function testConvertsDelimitedOperationId(): void
 	{
-		$namer = new OperationId('health-check');
+		$namer = new OperationId();
+		$namer->setOperationId('health-check');
 		$this->assertSame('healthCheck', $namer->getName());
 	}
 }

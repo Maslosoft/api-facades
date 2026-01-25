@@ -4,5 +4,5 @@ namespace Maslosoft\ApiFacades\Interfaces;
 
 interface OperationIdAware
 {
-	public function setOperationId(array $operationId);
+	public function setOperationId(string $operationId);
 }
