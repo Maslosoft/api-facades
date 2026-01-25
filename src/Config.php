@@ -2,6 +2,7 @@
 
 namespace Maslosoft\ApiFacades;
 
+use Maslosoft\ApiFacades\Config\GenerateConfig;
 use Maslosoft\ApiFacades\Config\InputConfig;
 use Maslosoft\ApiFacades\Config\JaneConfig;
 use Maslosoft\ApiFacades\Config\OutputConfig;
@@ -30,8 +31,7 @@ class Config
 
 	public OutputConfig $output;
 
-	/** @var array<string,mixed> */
-	public array $generate;
+	public GenerateConfig $generate;
 
 	/** @var array<string,mixed> */
 	public array $raw;
@@ -44,7 +44,7 @@ class Config
 		$this->jane = new JaneConfig($this, (array)($cfg['jane'] ?? []));
 		$this->input = new InputConfig($this, (array)($cfg['input'] ?? []));
 		$this->output = new OutputConfig($this, (array)($cfg['output'] ?? []));
-		$this->generate = (array)($cfg['generate'] ?? []);
+		$this->generate = new GenerateConfig($this, (array)($cfg['generate'] ?? []));
 
 		if ($this->input->location === '')
 		{

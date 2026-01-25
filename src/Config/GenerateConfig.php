@@ -3,22 +3,15 @@
 namespace Maslosoft\ApiFacades\Config;
 
 use Maslosoft\ApiFacades\Config;
+use Maslosoft\ApiFacades\Config\GenerateConfigs\ModuleConfig;
 use Maslosoft\ApiFacades\Interfaces\ConfigAware;
 use Maslosoft\ApiFacades\Traits\ConfigAwareTrait;
 
-/**
- * Jane-specific configuration.
- */
-class JaneConfig implements ConfigAware
+class GenerateConfig implements ConfigAware
 {
 	use ConfigAwareTrait;
 
-	/**
-	 * Whether to annotate Jane classes with @internal
-	 *
-	 * @var bool
-	 */
-	public bool $markInternal;
+	public ModuleConfig $module;
 
 	/**
 	 * @param Config              $config
@@ -27,6 +20,6 @@ class JaneConfig implements ConfigAware
 	public function __construct(Config $config, array $data = [])
 	{
 		$this->config = $config;
-		$this->markInternal = (bool)($data['markInternal'] ?? false);
+		$this->module = new ModuleConfig($config, (array)$data['modules']);
 	}
 }

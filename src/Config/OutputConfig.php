@@ -45,6 +45,7 @@ class OutputConfig implements ConfigAware
 	public string $path;
 
 	/**
+	 * @param Config              $config
 	 * @param array<string,mixed> $data
 	 */
 	public function __construct(Config $config, array $data = [])

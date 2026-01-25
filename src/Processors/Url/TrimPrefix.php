@@ -6,7 +6,7 @@ use Maslosoft\ApiFacades\Interfaces\Processor;
 
 class TrimPrefix implements Processor
 {
-	private string $prefix;
+	public string $prefix;
 
 	public function __construct(string $prefix = '')
 	{

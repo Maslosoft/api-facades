@@ -10,19 +10,13 @@ generate:
       class: Maslosoft\ApiFacades\Namers\Module\UrlNamer
       processors:
         # Tags configuration used when generating from tags
-        tags:
-          # Processors classes
-          processors:
-            firstTag:
-              class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
+#        firstTag:
+#          class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
         # URLs configuration when generating from URLs is used
-        url:
-          # Processor classes
-          processors:
-            trimUrl:
-              class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
-              # Skip part of URL starring with this string
-              prefix: "api"
+        trimUrl:
+          class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
+          # Skip part of URL starring with this string
+          prefix: "api"
   operations:
     namer:
       class: Maslosoft\ApiFacades\Namers\Operations\OperationId
@@ -31,5 +25,5 @@ output:
   namespace: Maslosoft\Api
   # Discover directory based on PSR-4 composer.json autoload
   discoverOutput: true
-  # If not empty, this output directory will be used
+  # If discover output is not enabled, this path will be used as output
   path: ""

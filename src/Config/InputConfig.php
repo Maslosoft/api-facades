@@ -15,15 +15,22 @@ class InputConfig implements ConfigAware
 	use ConfigAwareTrait;
 
 	/**
-	 * Location of OpenAPI spec or other input.
+	 * Location of OpenAPI spec, either as URL or as file.
 	 *
-	 * Example: http://127.0.0.1:8000/openapi.json
+	 * Paths are resolved against config file location if not absolute.
+	 *
+	 * Examples:
+	 *
+	 * 1. http://127.0.0.1:8000/openapi.json
+	 * 2. openapi.json
+	 * 3. /var/www/acme/openapi.json (not really recommended)
 	 *
 	 * @var string
 	 */
 	public string $location;
 
 	/**
+	 * @param Config              $config
 	 * @param array<string,mixed> $data
 	 */
 	public function __construct(Config $config, array $data = [])
