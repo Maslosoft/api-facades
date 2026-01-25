@@ -8,15 +8,15 @@ final class Resource
 	public array $verbs = [];
 	public string $name;
 	public string $path;
-	public string $tag;
+	public string $tags;
 
 	public function __construct(
 		string $name,   // method name, e.g. 'run' or 'profile'
 		string $path,
-		string $tag
+		string $tags
 	)
 	{
-		$this->tag = $tag;
+		$this->tags = $tags;
 		$this->path = $path;
 		$this->name = $name;
 	}

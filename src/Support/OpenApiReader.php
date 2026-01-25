@@ -134,9 +134,10 @@ class OpenApiReader
 				continue;
 			}
 
-			$tag = $this->extractTag($pathItem);
+			// TODO: This should actually extract tags, not tag from $pathItem. $pathItem has tag in path like $pathItem.get.tags
+			$tags = $this->extractTag($pathItem);
 			$resourceName = $this->resourceNameFromPath((string)$path);
-			$resource = new Resource($resourceName, (string)$path, $tag);
+			$resource = new Resource($resourceName, (string)$path, $tags);
 
 			foreach ($httpMethods as $method)
 			{
@@ -151,7 +152,7 @@ class OpenApiReader
 				}
 
 				$op = new Op();
-				$op->tag = $this->extractTag($operation) ?: $tag;
+				$op->tag = $this->extractTag($operation) ?: $tags;
 				$op->path = (string)$path;
 				$op->http = strtoupper($method);
 				$op->operationId = (string)($operation['operationId'] ?? '');
