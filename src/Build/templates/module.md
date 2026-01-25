@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace {{ns}};
 
-use {{genClientFqcn}};
-use {{verbFqcn}};
+{{uses}}
 
 /**
- * AUTO-GENERATED. Do not edit.
+ * AUTO-GENERATED module facade. Do not edit.
  * Tag: {{tag}}
  */
-final class {{class}}
+final class {{class}} extends {{extends}}
 {
-    public function __construct(private {{genClientFqcn}} $client) {}
+    public function __construct(private {{genClientShort}} $client) {}
 
-{{methods}}
+{{moduleMethods}}
+
+{{operationMethods}}
+
+    public function __get(string $name)
+    {
+        $map = [
+{{magicMap}}
+        ];
+        return isset($map[$name]) ? $map[$name]() : throw new \OutOfBoundsException('Unknown API group: ' . $name);
+    }
 }
 ```
