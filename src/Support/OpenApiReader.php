@@ -172,6 +172,7 @@ class OpenApiReader
 
 				$op = new Op();
 				$op->tag = $this->extractPrimaryTag($operationTags);
+				$op->tags = $operationTags;
 				$op->path = (string)$path;
 				$op->http = strtoupper($method);
 				$op->operationId = (string)($operation['operationId'] ?? '');

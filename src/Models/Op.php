@@ -15,6 +15,11 @@ final class Op
 	public string $tag;
 
 	/**
+	 * @var string[]
+	 */
+	public array $tags;
+
+	/**
 	 * Raw path for the operation.
 	 */
 	public string $path;
