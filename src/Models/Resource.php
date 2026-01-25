@@ -1,19 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Maslosoft\ApiFacades\Models;
 
+/**
+ * Describes a grouped OpenAPI resource identified by a path.
+ *
+ * Resources are a container for verb-specific operations and the unique
+ * tags applied to those operations.
+ */
 final class Resource
 {
-	/** @var array<string, Op> map verb => Op */
+	/**
+	 * Map of HTTP verb to OpenAPI operation metadata.
+	 *
+	 * @var array<string, Op>
+	 */
 	public array $verbs = [];
-	public string $name;
-	public string $path;
-	public string $tags;
 
+	/**
+	 * Resource name derived from the URL path segments.
+	 */
+	public string $name;
+
+	/**
+	 * Raw path (e.g. "/users/{id}").
+	 */
+	public string $path;
+
+	/**
+	 * Unique tags associated with operations under this path.
+	 *
+	 * @var string[]
+	 */
+	public array $tags;
+
+	/**
+	 * @param string   $name method name, e.g. 'run' or 'profile'
+	 * @param string   $path raw path (e.g. "/users/{id}")
+	 * @param string[] $tags unique tags aggregated from operations
+	 */
 	public function __construct(
-		string $name,   // method name, e.g. 'run' or 'profile'
+		string $name,
 		string $path,
-		string $tags
+		array $tags
 	)
 	{
 		$this->tags = $tags;
