@@ -1,12 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Maslosoft\ApiFacades\Models;
 
-final class Op {
+/**
+ * Represents a single OpenAPI operation (verb-specific) within a resource.
+ */
+final class Op
+{
+	/**
+	 * Primary tag for this operation.
+	 */
 	public string $tag;
+
+	/**
+	 * Raw path for the operation.
+	 */
 	public string $path;
-	public string $http;            // GET/POST/...
+
+	/**
+	 * HTTP method in uppercase form (e.g. GET/POST).
+	 */
+	public string $http;
+
+	/**
+	 * Operation identifier from the OpenAPI document.
+	 */
 	public string $operationId;
-	public string $janeMethod;      // camelCased opId
-	public string $returnDoc;       // phpdoc type for this verb (e.g. \NS\Model\Foo|array<int,\NS\Model\Bar>|mixed)
+
+	/**
+	 * camelCased variant of the operationId used by generators.
+	 */
+	public string $janeMethod;
+
+	/**
+	 * PHPDoc return type for the operation (e.g. \NS\Model\Foo|array<int,\NS\Model\Bar>|mixed).
+	 */
+	public string $returnDoc;
 }

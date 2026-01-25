@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Maslosoft\ApiFacades\Support;
 
 use Maslosoft\ApiFacades\Models\Model;
@@ -7,6 +9,9 @@ use Maslosoft\ApiFacades\Models\OpenApiSpec;
 use Maslosoft\ApiFacades\Models\Op;
 use Maslosoft\ApiFacades\Models\Resource;
 
+/**
+ * Converts an OpenAPI JSON document into a structured specification model.
+ */
 class OpenApiReader
 {
 	/**
@@ -27,6 +32,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Load the OpenAPI JSON document from a local path or URL.
+	 *
 	 * @param string $path
 	 * @return string
 	 */
@@ -60,6 +67,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Decode the JSON payload into an array document.
+	 *
 	 * @param string $contents
 	 * @param string $path
 	 * @return array<string, mixed>
@@ -88,6 +97,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Build model definitions from OpenAPI component schemas.
+	 *
 	 * @param array<string, mixed> $document
 	 * @return array<string, Model>
 	 */
@@ -109,6 +120,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Build resources for each OpenAPI path and its verb operations.
+	 *
 	 * @param array<string, mixed> $document
 	 * @param array<string, Model> $models
 	 * @return array<string, Resource>
@@ -134,10 +147,9 @@ class OpenApiReader
 				continue;
 			}
 
-			// TODO: This should actually extract tags, not tag from $pathItem. $pathItem has tag in path like $pathItem.get.tags
-			$tags = $this->extractTag($pathItem);
 			$resourceName = $this->resourceNameFromPath((string)$path);
-			$resource = new Resource($resourceName, (string)$path, $tags);
+			$verbs = [];
+			$tags = [];
 
 			foreach ($httpMethods as $method)
 			{
@@ -151,16 +163,27 @@ class OpenApiReader
 					continue;
 				}
 
+				$operationTags = $this->extractTags($operation);
+				if ($operationTags === [])
+				{
+					$operationTags = ['default'];
+				}
+				$tags = array_merge($tags, $operationTags);
+
 				$op = new Op();
-				$op->tag = $this->extractTag($operation) ?: $tags;
+				$op->tag = $this->extractPrimaryTag($operationTags);
 				$op->path = (string)$path;
 				$op->http = strtoupper($method);
 				$op->operationId = (string)($operation['operationId'] ?? '');
 				$op->janeMethod = $this->camelizeOperationId($op->operationId);
 				$op->returnDoc = $this->buildReturnDoc($operation, $models);
 
-				$resource->verbs[$method] = $op;
+				$verbs[$method] = $op;
 			}
+
+			$resourceTags = $this->uniqueTags($tags);
+			$resource = new Resource($resourceName, (string)$path, $resourceTags);
+			$resource->verbs = $verbs;
 
 			$resources[(string)$path] = $resource;
 		}
@@ -169,6 +192,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Determine the response return type for a given operation.
+	 *
 	 * @param array<string, mixed> $operation
 	 * @param array<string, Model> $models
 	 * @return string
@@ -239,6 +264,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Map a schema definition to a PHPDoc type string.
+	 *
 	 * @param array<string, mixed> $schema
 	 * @param array<string, Model> $models
 	 * @return string
@@ -299,6 +326,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Map OpenAPI scalar types to PHP scalar types.
+	 *
 	 * @param string $type
 	 * @return string
 	 */
@@ -314,20 +343,66 @@ class OpenApiReader
 	}
 
 	/**
+	 * Extract normalized tags for a path operation.
+	 *
 	 * @param array<string, mixed> $item
-	 * @return string
+	 * @return string[]
 	 */
-	private function extractTag(array $item): string
+	private function extractTags(array $item): array
 	{
 		$tags = $item['tags'] ?? [];
 		if (!is_array($tags) || $tags === [])
 		{
-			return 'default';
+			return [];
 		}
-		return (string)$tags[0];
+
+		$normalized = [];
+		foreach ($tags as $tag)
+		{
+			$tag = trim((string)$tag);
+			if ($tag === '')
+			{
+				continue;
+			}
+			$normalized[] = $tag;
+		}
+
+		return $normalized;
 	}
 
 	/**
+	 * Pick the primary tag (first) for an operation, defaulting as needed.
+	 *
+	 * @param string[] $tags
+	 * @return string
+	 */
+	private function extractPrimaryTag(array $tags): string
+	{
+		return $tags[0] ?? 'default';
+	}
+
+	/**
+	 * Deduplicate and sort tags for resource-level grouping.
+	 *
+	 * @param string[] $tags
+	 * @return string[]
+	 */
+	private function uniqueTags(array $tags): array
+	{
+		if ($tags === [])
+		{
+			return [];
+		}
+
+		$unique = array_values(array_unique($tags));
+		sort($unique);
+
+		return $unique;
+	}
+
+	/**
+	 * Convert a path string into a camelCase resource name.
+	 *
 	 * @param string $path
 	 * @return string
 	 */
@@ -352,6 +427,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Normalize an OpenAPI operationId into a camelCase method name.
+	 *
 	 * @param string $operationId
 	 * @return string
 	 */
@@ -376,6 +453,8 @@ class OpenApiReader
 	}
 
 	/**
+	 * Parse a schema reference into a model name.
+	 *
 	 * @param string $ref
 	 * @return string
 	 */
