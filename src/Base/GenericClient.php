@@ -2,6 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Base;
 
+use Maslosoft\ApiFacades\Exceptions\BadParamsException;
 use Maslosoft\ApiFacades\Interfaces\Hydrator;
 
 abstract class GenericClient
@@ -38,12 +39,13 @@ abstract class GenericClient
 	 *
 	 * The optional `$body` parameter can be used to provide request body as PHP, JSON convertible array.
 	 *
-	 * @param string $endpoint
-	 * @param string $method
-	 * @param array $params
+	 * @param string $endpoint Endpoint URL, relative to the base URL, as defined in openapi specification, including parameters in curly braces.
+	 * @param string $method Method as per HTTP specification, e.g. 'get', 'post', 'put', 'delete'
+	 * @param array $params Array key-values matching parameter names in endpoint URL.
+	 * @param mixed $body Arbitrary data to be sent as request body, the only requirement is that it can be converted to JSON.
 	 * @return array
 	 */
-	public function getData(string $endpoint, string $method, array $params = [], array $body = []): array
+	public function getData(string $endpoint, string $method, array $params = [], mixed $body = []): array
 	{
 		// TODO: Implement getData() method.
 		return [];
