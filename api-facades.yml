@@ -1,4 +1,8 @@
-jane:
+###
+# This is base configuration file for API Facade generator that will be always loaded,
+# and options can be overridden by configuration loaded from concrete config.
+###
+jane: # TODO: Possibly Jane will no longer be required
   # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
   markInternal: true
 input:
@@ -18,6 +22,9 @@ generate:
           # Skip part of URL starring with this string
           prefix: "api"
     baseClass: Maslosoft\ApiFacades\Base\GenericModule
+  models:
+    hydrator:
+      class: Maslosoft\ApiFacades\Hydrators\ObjectProperties
   operations:
     namer:
       class: Maslosoft\ApiFacades\Namers\Operations\OperationId

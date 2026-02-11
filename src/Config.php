@@ -38,6 +38,8 @@ class Config
 
 	protected function __construct(array $cfg, string $path)
 	{
+		$baseConfig = (new YamlReader)->read(__DIR__ . '/../api-facades.yml');
+		$cfg = array_replace_recursive($baseConfig, $cfg);
 		$this->filename = $path;
 		$this->path = dirname($path);
 		$this->raw = $cfg;
