@@ -9,7 +9,8 @@ use Maslosoft\ApiFacades\Hydrators\Casts\CastArray;
 class ObjectProperties
 {
 	/**
-	 * Populates the properties of the given object with the corresponding values from the provided data array.
+	 * Populates the properties of the given object with the corresponding values from the provided data array. The
+	 * object's properties must be public and writable and defined explicitly in code, as hydrator uses reflection to enumerate and analyze them.
 	 *
 	 * The hydrator uses property types to infer the correct data type for each property. Only single typed properties are supported,
 	 * union types are not supported because that would cause ambiguity. The union types are allowed only if used together with explicit

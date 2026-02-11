@@ -54,8 +54,13 @@ class Builder extends BaseBuilder implements BuilderInterface
 					$operationNamer->setOperationId($operation->id);
 				}
 				$operationName = $operationNamer->getName();
-				// 1. TODO: Add each operation to the module
+				// 1. TODO: Add each operation to the module as property, but for GET verbs also as a method, which under the hood will call verb GET and return
 			}
 		}
+	}
+
+	public function make()
+	{
+
 	}
 }

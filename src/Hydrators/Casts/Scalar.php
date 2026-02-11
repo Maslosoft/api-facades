@@ -9,13 +9,17 @@ use Attribute;
  *
  * Usage:
  * ```php
+ *     // Cast to string explicitly
  *     #[Scalar(Scalar::string)]
- *     public RevenueItem $item;
+ *     public int|string $item;
+ *
+ * 	   // Cast to int automatically, based on type
+ *     public int $autoType;
  * ```
  *
- *  Not needed if type is defined, and it's only one type (union types are not supported):
+ *  Not needed if type is defined, and it's only one type (union types are not supported without annotation):
  *  ```php
- *      public ?RevenueItem $item = null;
+ *      public ?int $item = null;
  *  ```
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]

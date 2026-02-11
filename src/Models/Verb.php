@@ -19,13 +19,17 @@ final class Verb
 	private string $method;
 
 	public function __construct(
-		array  $verbs,
+		array|string  $verbs,
 		string $owner,
 		string $method
 	)
 	{
 		$this->method = $method;
 		$this->owner = $owner;
+		if(is_string($verbs))
+		{
+			$verbs = [$verbs];
+		}
 		$this->verbs = $verbs;
 	}
 
