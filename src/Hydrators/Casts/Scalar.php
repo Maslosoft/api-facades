@@ -23,5 +23,6 @@ class Scalar
 {
 	public const string string = 'string';
 	public const string int = 'int';
-	// TODO: Define all PHP scalar types
+	public const string bool = 'bool';
+	public const string float = 'float';
 }
