@@ -4,16 +4,16 @@ namespace Tests\Unit\Hydrators;
 
 use Maslosoft\ApiFacades\Exceptions\UnsupportedTypeException;
 use Maslosoft\ApiFacades\Hydrators\ObjectProperties;
-use Models\Hydration\ArrayCastModel;
-use Models\Hydration\CastChild;
-use Models\Hydration\DefaultValuesModel;
-use Models\Hydration\InterfaceParentModel;
-use Models\Hydration\ParentModel;
-use Models\Hydration\ScalarArrayModel;
-use Models\Hydration\ScalarModel;
-use Models\Hydration\UnionScalarModel;
-use Models\Hydration\UnionUnsupportedModel;
-use Models\Hydration\UntypedModel;
+use Tests\Models\Hydration\ArrayCastModel;
+use Tests\Models\Hydration\CastChild;
+use Tests\Models\Hydration\DefaultValuesModel;
+use Tests\Models\Hydration\InterfaceParentModel;
+use Tests\Models\Hydration\ParentModel;
+use Tests\Models\Hydration\ScalarArrayModel;
+use Tests\Models\Hydration\ScalarModel;
+use Tests\Models\Hydration\UnionScalarModel;
+use Tests\Models\Hydration\UnionUnsupportedModel;
+use Tests\Models\Hydration\UntypedModel;
 use Tests\Support\Unit;
 
 class ObjectPropertiesTest extends Unit

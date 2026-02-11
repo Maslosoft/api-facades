@@ -1,6 +1,6 @@
 <?php
 
-namespace Models\Hydration;
+namespace Tests\Models\Hydration;
 
 class ParentModel
 {
