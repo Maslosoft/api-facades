@@ -29,4 +29,14 @@ class Scalar
 	public const string int = 'int';
 	public const string bool = 'bool';
 	public const string float = 'float';
+
+	public string $type;
+
+	/**
+	 * @param string $type One of Scalar::string, Scalar::int, Scalar::bool, Scalar::float
+	 */
+	public function __construct(string $type)
+	{
+		$this->type = $type;
+	}
 }

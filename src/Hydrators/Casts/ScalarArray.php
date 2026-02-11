@@ -23,4 +23,14 @@ class ScalarArray
 	public const string int = 'int';
 	public const string bool = 'bool';
 	public const string float = 'float';
+
+	public string $type;
+
+	/**
+	 * @param string $type One of ScalarArray::string, ScalarArray::int, ScalarArray::bool, ScalarArray::float
+	 */
+	public function __construct(string $type)
+	{
+		$this->type = $type;
+	}
 }

@@ -5,6 +5,9 @@ namespace Maslosoft\ApiFacades\Hydrators;
 use Maslosoft\ApiFacades\Exceptions\UnsupportedTypeException;
 use Maslosoft\ApiFacades\Hydrators\Casts\Cast;
 use Maslosoft\ApiFacades\Hydrators\Casts\CastArray;
+use Maslosoft\ApiFacades\Hydrators\Casts\Scalar;
+use Maslosoft\ApiFacades\Hydrators\Casts\ScalarArray;
+use ReflectionUnionType;
 
 class ObjectProperties
 {
@@ -29,6 +32,187 @@ class ObjectProperties
 	 */
 	public function hydrate(object $object, array $data): object
 	{
-		// TODO: Implement hydrate() method as in method description.
+		$reflection = new \ReflectionObject($object);
+
+		foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property)
+		{
+			if ($property->isStatic())
+			{
+				continue;
+			}
+
+			$propertyName = $property->getName();
+			if (!array_key_exists($propertyName, $data))
+			{
+				continue;
+			}
+
+			$value = $data[$propertyName];
+
+			$castAttributes = $property->getAttributes(Cast::class);
+			if (!empty($castAttributes))
+			{
+				$cast = $castAttributes[0]->newInstance();
+				$property->setValue($object, $this->hydrateObjectValue($cast->class, $value));
+				continue;
+			}
+
+			$castArrayAttributes = $property->getAttributes(CastArray::class);
+			if (!empty($castArrayAttributes))
+			{
+				$castArray = $castArrayAttributes[0]->newInstance();
+				$property->setValue($object, $this->hydrateObjectArray($castArray->class, $value));
+				continue;
+			}
+
+			$scalarAttributes = $property->getAttributes(Scalar::class);
+			if (!empty($scalarAttributes))
+			{
+				$scalar = $scalarAttributes[0]->newInstance();
+				$property->setValue($object, $this->castScalarValue($value, $scalar->type));
+				continue;
+			}
+
+			$scalarArrayAttributes = $property->getAttributes(ScalarArray::class);
+			if (!empty($scalarArrayAttributes))
+			{
+				$scalarArray = $scalarArrayAttributes[0]->newInstance();
+				$property->setValue($object, $this->castScalarArrayValue($value, $scalarArray->type));
+				continue;
+			}
+
+			$type = $property->getType();
+			if ($type instanceof ReflectionUnionType)
+			{
+				throw new UnsupportedTypeException(sprintf(
+					'Property `%s::%s` uses union type without explicit cast.',
+					$reflection->getName(),
+					$propertyName
+				));
+			}
+
+			if (!$type instanceof \ReflectionNamedType)
+			{
+				$property->setValue($object, $value);
+				continue;
+			}
+
+			if ($value === null)
+			{
+				$property->setValue($object, null);
+				continue;
+			}
+
+			$typeName = $type->getName();
+			if ($type->isBuiltin())
+			{
+				$property->setValue($object, $this->castBuiltinValue($value, $typeName));
+				continue;
+			}
+
+			$property->setValue($object, $this->hydrateObjectValue($typeName, $value));
+		}
+
+		return $object;
+	}
+
+	private function castBuiltinValue(mixed $value, string $type): mixed
+	{
+		return match ($type)
+		{
+			'int' => (int)$value,
+			'float' => (float)$value,
+			'bool' => (bool)$value,
+			'string' => (string)$value,
+			'array' => (array)$value,
+			'object' => (object)$value,
+			default => $value,
+		};
+	}
+
+	private function castScalarValue(mixed $value, string $type): mixed
+	{
+		if ($value === null)
+		{
+			return null;
+		}
+
+		return match ($type)
+		{
+			Scalar::int => (int)$value,
+			Scalar::float => (float)$value,
+			Scalar::bool => (bool)$value,
+			Scalar::string => (string)$value,
+			default => $value,
+		};
+	}
+
+	private function castScalarArrayValue(mixed $value, string $type): mixed
+	{
+		if ($value === null || !is_array($value))
+		{
+			return $value;
+		}
+
+		$casted = [];
+		foreach ($value as $key => $item)
+		{
+			$casted[$key] = $this->castScalarValue($item, $type);
+		}
+
+		return $casted;
+	}
+
+	private function hydrateObjectValue(string $class, mixed $value): mixed
+	{
+		if ($value === null)
+		{
+			return null;
+		}
+
+		if (is_object($value))
+		{
+			return $value;
+		}
+
+		if (!is_array($value))
+		{
+			return $value;
+		}
+
+		$instance = new $class();
+		$this->hydrate($instance, $value);
+
+		return $instance;
+	}
+
+	private function hydrateObjectArray(string $class, mixed $value): mixed
+	{
+		if ($value === null || !is_array($value))
+		{
+			return $value;
+		}
+
+		$items = [];
+		foreach ($value as $key => $item)
+		{
+			if (is_object($item))
+			{
+				$items[$key] = $item;
+				continue;
+			}
+
+			if (!is_array($item))
+			{
+				$items[$key] = $item;
+				continue;
+			}
+
+			$instance = new $class();
+			$this->hydrate($instance, $item);
+			$items[$key] = $instance;
+		}
+
+		return $items;
 	}
 }
