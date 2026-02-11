@@ -1,0 +1,4046 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Navifleet API",
+        "description": "",
+        "version": "1.0.0"
+    },
+    "host": "gps.navifleet.pl",
+    "basePath": "/api",
+    "schemes": [
+        "https"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/alert/list": {
+            "get": {
+                "tags": [
+                    "alerts"
+                ],
+                "summary": "Returns a list of notifications for the logged in user.",
+                "description": "Allows you to filter notifications by the date the event occurred.",
+                "operationId": "alert#listAction",
+                "parameters": [
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of the filtering time range for example 2022-01-04 20:00",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of filtering time range for example 2022-01-04 20:00",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Current page bias",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit per page",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Text search engine",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Download of notification list successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "User Notification List",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Alert"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/alert/listbydays": {
+            "get": {
+                "tags": [
+                    "alerts"
+                ],
+                "summary": "Returns a list of notifications for the logged in user, categorized by date of occurrence.",
+                "description": "Allows you to filter notifications by the date the event occurred.",
+                "operationId": "alert#listByDayAction",
+                "parameters": [
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of the filtering time range",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of the filtering time range",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Download of notification list successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Successful operation status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of notifications for a user by day",
+                                    "type": "array",
+                                    "items": {
+                                        "description": "Notifications list",
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/Alert"
+                                        }
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/alert/detail": {
+            "get": {
+                "tags": [
+                    "alerts"
+                ],
+                "summary": "Returns details of the selected alert for the logged in user along with the occurrence history of correlated alerts for 30 days.",
+                "description": "Returns details of the selected alert for the logged in user along with the occurrence history of correlated alerts for 30 days.",
+                "operationId": "alert#detailAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Alert ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloading notification details successfully completed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Successful operation status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Details of the notification",
+                                    "properties": {
+                                        "detail": {
+                                            "description": "Details of the notification",
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Notification ID",
+                                                    "type": "integer"
+                                                },
+                                                "time": {
+                                                    "description": "Time of notification generation",
+                                                    "type": "integer",
+                                                    "format": "int64"
+                                                },
+                                                "name": {
+                                                    "description": "Content of the notification",
+                                                    "type": "string"
+                                                },
+                                                "device": {
+                                                    "description": "Name of the notified device",
+                                                    "type": "string"
+                                                },
+                                                "device_license": {
+                                                    "description": "Registration number of the notified device",
+                                                    "type": "string"
+                                                },
+                                                "lon": {
+                                                    "description": "Longitude",
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "lat": {
+                                                    "description": "Latitude",
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "address": {
+                                                    "description": "Address",
+                                                    "type": "string"
+                                                },
+                                                "privateMode": {
+                                                    "description": "Alert private mode state.",
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "perDaysCorrelatedAlertsNumbers": {
+                                            "description": "Number of occurrences of correlated\n     *                      alerts by day",
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "$ref": "#/definitions/CorrelatedAlertsByDay"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/bordercrossing/list/{type}/{id}": {
+            "get": {
+                "tags": [
+                    "borderCrossings"
+                ],
+                "summary": "Returns a list of border crossing events, for the given identifier.",
+                "description": "Object identifier means device identifier or driver code. Allows filtering by the date the event occurred.",
+                "operationId": "borderCrossing#listAction",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Type for which events will be retrieved (device or driver)",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "device",
+                            "driver"
+                        ]
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Identifier of the object for which events will be retrieved",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded event list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of border crossing events",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/BorderCrossing"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/bordercrossing/list/{type}": {
+            "get": {
+                "tags": [
+                    "borderCrossings"
+                ],
+                "summary": "Returns a list of overrun events, for the given identifiers.",
+                "description": "Object identifier means device identifier or driver code. Allows filtering by the date the event occurred.",
+                "operationId": "borderCrossing#multipleListAction",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Type for which events will be retrieved (device or driver)",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "device",
+                            "driver"
+                        ]
+                    },
+                    {
+                        "name": "ids",
+                        "in": "query",
+                        "description": "List of identifiers (separated by ',') for which events will be retrieved",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Download of event list successfully completed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Successful operation status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of border crossing events",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/BorderCrossing"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chart/speed": {
+            "get": {
+                "tags": [
+                    "charts",
+                    "routes"
+                ],
+                "summary": "Returns speed data for the specified device for the logged in user, over the specified time interval.",
+                "description": "",
+                "operationId": "chart#speedAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of time interval in format YYYY-MM-DD HH:mm",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of time interval in format YYYY-MM-DD HH:mm",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Status of successful operation",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Speed data of the selected device",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "number",
+                                            "maxItems": 2,
+                                            "minItems": 2
+                                        }
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/courses/list": {
+            "get": {
+                "tags": [
+                    "courses"
+                ],
+                "summary": "Returns lists courses by vehicle id",
+                "description": "Returns lists courses by vehicle id",
+                "operationId": "courses#vehicleCoursesListAction",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "query",
+                        "description": "Device id",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "fromTs",
+                        "in": "query",
+                        "description": "Timestamp of the beginning of the courses search"
+                    },
+                    {
+                        "name": "toTs",
+                        "in": "query",
+                        "description": "Timestamp of the ending of the courses search"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Download of course list successfully completed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Courses list for device",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Course"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/list": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Returns a list of devices for the logged in user.",
+                "description": "Allows you to filter devices based on the selected context.",
+                "operationId": "device#listAction",
+                "parameters": [
+                    {
+                        "name": "context",
+                        "in": "query",
+                        "description": "Context for which list will be returned",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "delegations",
+                            "reports",
+                            "sharing",
+                            "tasks"
+                        ]
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Vehicle type which will have to be returned",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded device list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of devices for the user in the given context",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Device"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/meters": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Returns meters of selected devices.",
+                "description": "Returns meters of selected devices.",
+                "operationId": "device#metersAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Devices ID's for which meters should be returned, separated by comma",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Meters retrieved successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of meters for selected devices",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DeviceMeters"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/immobilizer/lock": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends a request to the device to lock the vehicle using the immobilizer.",
+                "description": "The device lock will be active until it is deactivated.",
+                "operationId": "device#immobilizerLockAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request dispatch successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Success status information",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/immobilizer/unlock": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends a request to the device to unlock the vehicle using the immobilizer.",
+                "description": "The device lock will be disabled until it is re-enabled.",
+                "operationId": "device#immobilizerUnlockAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request dispatch successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Success status information",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/can-control/door/close/{id}": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends a request to the device to lock the door",
+                "description": "",
+                "operationId": "device#canControlDoorCloseAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request dispatch successfully completed"
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/can-control/door/open/{id}": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends a door unlock request to the device",
+                "description": "",
+                "operationId": "device#canControlDoorOpenAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request dispatch successful"
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/obd/get/{type}/{id}": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends a data download request to the device via ODB",
+                "description": "",
+                "operationId": "device#getObdData",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Data type",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "info",
+                            "faultcodes",
+                            "vin"
+                        ]
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device data"
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/device/obd/dtc/clear/{id}": {
+            "get": {
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Sends the device a request to clear error codes",
+                "description": "",
+                "operationId": "device#obdDtcFaultCodesClear",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request dispatch successful"
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/etoll-devices/list": {
+            "get": {
+                "tags": [
+                    "etollDevices"
+                ],
+                "summary": "Returns a list of devices with permission to send information to the E-Toll system",
+                "description": "Returns a list of E-Toll devices with technical ID and current status of sending to E-Toll system.",
+                "operationId": "etoll-devices#listAction",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded device list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "User etoll device list",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/EtollDevice"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/etoll-devices/sent-etoll-list": {
+            "get": {
+                "tags": [
+                    "etollDevices"
+                ],
+                "summary": "Methods returns all devices with E-TOLL and/or SENT permission, and information about sendign data to E-TOLL/SENT services",
+                "description": "Methods returns all devices with E-TOLL and/or SENT permission, and information about sendign data to E-TOLL/SENT services",
+                "operationId": "etoll-devices#sentEtollDeviceList",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Pobranie listy urz\u0105dze\u0144 zako\u0144czone powodzeniem",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Status of successful operation",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "User E-TOLL/SENT device list",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/SentGEODevice"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/geozone/list": {
+            "get": {
+                "tags": [
+                    "geozones"
+                ],
+                "summary": "Returns a list of zones for the logged in user",
+                "description": "",
+                "operationId": "geoZone#listAction",
+                "responses": {
+                    "200": {
+                        "description": "Zone list download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of user notifications by day",
+                                    "type": "array",
+                                    "items": {
+                                        "description": "List of zones",
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/GeoZone"
+                                        }
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/permissions/list": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Returns a list of permission function names for the currently logged in user.",
+                "description": "",
+                "operationId": "permissions#listAction",
+                "responses": {
+                    "200": {
+                        "description": "Downloaded permissions list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Permission list for user",
+                                    "type": "array",
+                                    "items": {
+                                        "description": "Notification List",
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/pushnotification/token/set": {
+            "get": {
+                "tags": [
+                    "pushnotifications"
+                ],
+                "summary": "Sets the PUSH notification token for the authenticated user correlated to his mobile device and the service to which the PUSH notifications will go",
+                "description": "Sets the token for PUSH notifications for the authorized user correlated to their mobile device.",
+                "operationId": "pushnotification#setTokenAction",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "A unique Token correlated to the user, their device and the service to which PUSH notifications will be sent",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "mobile_device_info",
+                        "in": "query",
+                        "description": "Text describing the user's device (such as make, model, serial number, etc.)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token was set successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Operation status information and token",
+                                    "properties": {
+                                        "msg": {
+                                            "description": "Feedback message informing about operation status",
+                                            "type": "string"
+                                        },
+                                        "token": {
+                                            "description": "Set token value correctly",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/pushnotification/token/unset": {
+            "get": {
+                "tags": [
+                    "pushnotifications"
+                ],
+                "summary": "Deletes an uploaded PUSH notification token for an apikey key-authorized user.",
+                "description": "Removes the submitted token for PUSH notification for the apikey key-authorized user.",
+                "operationId": "pushnotification#unsetTokenAction",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "A unique Token correlated to a user, their device and service to be deleted",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token was successfully deleted",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Operation status information and deleted token",
+                                    "properties": {
+                                        "msg": {
+                                            "description": "Feedback message informing about operation status",
+                                            "type": "string"
+                                        },
+                                        "token": {
+                                            "description": "Value of deleted token",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/refueling/list/{id}": {
+            "get": {
+                "tags": [
+                    "refueling"
+                ],
+                "summary": "Returns a list of refueling, for the given identifier.",
+                "description": "Object identifier means device identifier. Allows filtering by the date.",
+                "operationId": "refueling#listAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Identifier of the object for which events will be retrieved",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of refueling",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Refueling"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/reports/engine_work_time/{id}": {
+            "get": {
+                "tags": [
+                    "reports"
+                ],
+                "summary": "Returns a list of engine work time by day",
+                "description": "Object identifier means device identifier. Allows filtering by the date.",
+                "operationId": "reports#engineWorkTimeReportAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Identifier of the vehicle for which drives will be retrieved",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of filtering date range (format yyyy-mm-dd)",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of filtering date range (format yyyy-mm-dd)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of engine work times",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/EngineWorkTime"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/route/position": {
+            "get": {
+                "tags": [
+                    "routes"
+                ],
+                "summary": "Returns the last item of selected devices of the logged-in user.",
+                "description": "If no device identifiers are given, it returns the last positions of all vehicles available in the account of the logged-in user.",
+                "operationId": "route#positionAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "List of device identifiers as character string, separated by <code>_</code>",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded item list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of recent items of selected devices",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Position"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/route/history": {
+            "get": {
+                "tags": [
+                    "routes"
+                ],
+                "summary": "Returns a list of archived positions (route history) of the device for the logged in user, over the given time interval.",
+                "description": "",
+                "operationId": "route#historyAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                     or specifies a timezone\n                     (e.g. <em>2022-01-05T15:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                    or specifies a timezone\n                    (e.g. <em>2022-01-05T16:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Route history download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Route history of the selected device",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/HistoryPosition"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/route/details": {
+            "get": {
+                "tags": [
+                    "routes"
+                ],
+                "summary": "Returns details of the last item of the logged-in user's selected device.",
+                "description": "",
+                "operationId": "route#detailAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item retrieval successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Route history of the selected device",
+                                    "$ref": "#/definitions/DetailedPosition"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/route/stoppages": {
+            "get": {
+                "tags": [
+                    "routes"
+                ],
+                "summary": "Returns a list of device stops for the logged in user, over the given time interval.",
+                "description": "",
+                "operationId": "route#stoppageAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                    or specifies a timezone\n                    (e.g. <em>2022-01-05T16:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                    or specifies a timezone\n                    (e.g. <em>2022-01-05T16:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded stop list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of stops of the selected device",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Stoppage"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/route/summary": {
+            "get": {
+                "tags": [
+                    "routes"
+                ],
+                "summary": "Returns a summary of the device's traveled route for the logged in user, over the specified time interval.",
+                "description": "",
+                "operationId": "route#summaryAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Device ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "begin",
+                        "in": "query",
+                        "description": "Start of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                or specifies a timezone\n                (e.g. <em>2022-01-05T16:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "description": "End of time interval as is a UNIX timestamp (e.g. <em>1641396002</em>)\n                or specifies a timezone\n                (e.g. <em>2022-01-05T16:00:00+02:00</em>).",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Summary download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Route Summary",
+                                    "$ref": "#/definitions/RouteSummary"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/sent/set-sent-enabled": {
+            "post": {
+                "tags": [
+                    "sentStatus"
+                ],
+                "summary": "Modifies the value of the flag with information about sending data to the SENT system",
+                "description": "",
+                "operationId": "sent#setSentEnabledAction",
+                "parameters": [
+                    {
+                        "name": "device_id",
+                        "in": "formData",
+                        "description": "Identifier of the device for which the broadcast status is being changed",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "sent_enabled",
+                        "in": "formData",
+                        "description": "Transmission status",
+                        "required": true,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status change successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Zmienia warto\u015b\u0107 statusu nadawnia do systemu SENT",
+                                    "$ref": "#/definitions/SentStatus"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/sent/sent-enabled-list": {
+            "get": {
+                "tags": [
+                    "sentStatus"
+                ],
+                "summary": "Retrieves the sent system broadcast status value for devices that have this permission",
+                "description": "",
+                "operationId": "sent#sentEnabledListAction",
+                "responses": {
+                    "200": {
+                        "description": "Downloading statuses successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Zwraca list\u0119 urz\u0105dze\u0144 uprawnionych do integracji z systemem SENT wraz z ich aktualnym statusem nadawania.",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/SentStatus"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/list": {
+            "get": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Returns a list of tasks for the logged in user",
+                "description": "Provides a pagination mechanism",
+                "operationId": "task#listAction",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of tasks per page",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Text search engine",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task list download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of tasks with pagination parameters",
+                                    "properties": {
+                                        "data": {
+                                            "description": "List of tasks",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Task"
+                                            }
+                                        },
+                                        "page": {
+                                            "description": "Page number",
+                                            "type": "integer"
+                                        },
+                                        "limit": {
+                                            "description": "Number of tasks per page",
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "description": "Total number of tasks per user",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/get": {
+            "get": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Returns the data of the selected task for the user",
+                "description": "",
+                "operationId": "task#readAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Task ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Zwraca dane wybranego {@link Task zadania} dla u\u017cytkownika.\n\nParametr <code>id</code> okre\u015bla, kt\u00f3rego zadania dane zostan\u0105 zwr\u00f3cone.",
+                                    "$ref": "#/definitions/Task"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/set": {
+            "post": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Modifies the content of the task",
+                "description": "",
+                "operationId": "task#setAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "formData",
+                        "description": "Task ID",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "executor_id",
+                        "in": "formData",
+                        "description": "Task executor user ID",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "device_id",
+                        "in": "formData",
+                        "description": "Identifier of the device associated with the task",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "number",
+                        "in": "formData",
+                        "description": "Task number",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "type",
+                        "in": "formData",
+                        "description": "Task type",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2
+                        ]
+                    },
+                    {
+                        "name": "status",
+                        "in": "formData",
+                        "description": "Job status",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            4,
+                            8,
+                            16
+                        ]
+                    },
+                    {
+                        "name": "begin_date",
+                        "in": "formData",
+                        "description": "Task start date",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "formData",
+                        "description": "Task end date",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "distance",
+                        "in": "formData",
+                        "description": "Distance traveled in task",
+                        "required": false,
+                        "type": "number",
+                        "format": "float"
+                    },
+                    {
+                        "name": "distance_for_accept",
+                        "in": "formData",
+                        "description": "Distance to be overwritten",
+                        "required": false,
+                        "type": "number",
+                        "format": "float"
+                    },
+                    {
+                        "name": "distance_change_accept",
+                        "in": "formData",
+                        "description": "Negotiate task override",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "distance_change_confirmation_send",
+                        "in": "formData",
+                        "description": "Negotiation of task override",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "modification_exist",
+                        "in": "formData",
+                        "description": "Negotiate task override",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "name": "modification_override_accept",
+                        "in": "formData",
+                        "description": "Negotiate task override",
+                        "required": true,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task download successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Modyfikuje zawarto\u015b\u0107 zadania.",
+                                    "$ref": "#/definitions/Task"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "deprecated": true,
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/add": {
+            "post": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Adds a new task",
+                "description": "",
+                "operationId": "task#addAction",
+                "parameters": [
+                    {
+                        "name": "executor_id",
+                        "in": "formData",
+                        "description": "Task executor user ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "device_id",
+                        "in": "formData",
+                        "description": "Identifier of the device associated with the task",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "number",
+                        "in": "formData",
+                        "description": "Task number",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "type",
+                        "in": "formData",
+                        "description": "Task type",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2
+                        ]
+                    },
+                    {
+                        "name": "status",
+                        "in": "formData",
+                        "description": "Job status",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            4,
+                            8,
+                            16
+                        ]
+                    },
+                    {
+                        "name": "begin_date",
+                        "in": "formData",
+                        "description": "Task start date, format YYYY-MM-DD HH:mm:ss",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "formData",
+                        "description": "Job end date, format YYYY-MM-DD HH:mm:ss",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Creation of new task successfully completed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Tworzy i dodaje nowe {@link Task zadanie}",
+                                    "$ref": "#/definitions/Task"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/edit": {
+            "post": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Modifies the given task",
+                "description": "",
+                "operationId": "task#editAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "formData",
+                        "description": "Task ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "executor_id",
+                        "in": "formData",
+                        "description": "Job executor user ID",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "device_id",
+                        "in": "formData",
+                        "description": "Identifier of the device associated with the task",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "number",
+                        "in": "formData",
+                        "description": "Task number",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "type",
+                        "in": "formData",
+                        "description": "Task type",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2
+                        ]
+                    },
+                    {
+                        "name": "status",
+                        "in": "formData",
+                        "description": "Job status",
+                        "required": true,
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            4,
+                            8,
+                            16
+                        ]
+                    },
+                    {
+                        "name": "begin_date",
+                        "in": "formData",
+                        "description": "Task start date, format YYYY-MM-DD HH:mm:ss",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "formData",
+                        "description": "Job end date, format YYYY-MM-DD HH:mm:ss",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task modification successfully completed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Modyfikuje {@link Task zadanie}",
+                                    "$ref": "#/definitions/Task"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/task/business-dependencies": {
+            "get": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Returns a json structure describing the business logic of the task module",
+                "description": "",
+                "operationId": "task#tasksBusinessDependenciesAction",
+                "parameters": [
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "description": "Symbol of language in which translations of structures are to be provided",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "Zwraca struktur\u0119 opisuj\u0105c\u0105 logik\u0119 biznesow\u0105 i mo\u017cliwe przej\u015bcia pomi\u0119dzy statusami oraz\nmo\u017cliwe pola do edycji dla r\u00f3\u017cnych typ\u00f3w {@link Task zada\u0144}",
+                                    "$ref": "#/definitions/TasksBusinessDependencies"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/user/login": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Returns the data of the user with the given name and password.",
+                "description": "The method returns data only if the user with the given name exists in the system, and the given password matches the password of this user in the system.",
+                "operationId": "user#loginAction",
+                "parameters": [
+                    {
+                        "name": "login",
+                        "in": "query",
+                        "description": "User name in the system",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "description": "User password",
+                        "required": true,
+                        "type": "string",
+                        "format": "password"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization successful",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "",
+                                    "$ref": "#/definitions/User"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Authorization failed",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean",
+                                    "default": "false"
+                                },
+                                "data": {
+                                    "description": "Error message",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/subaccounts": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Returns a list of sub-accounts available to the logged in user",
+                "responses": {
+                    "200": {
+                        "description": "Downloading task list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of subaccounts",
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "description": "User ID",
+                                                "type": "integer"
+                                            },
+                                            "first_name": {
+                                                "description": "User's first and last name",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        },
+        "/vehicle_drive/list/{id}": {
+            "get": {
+                "tags": [
+                    "vehicle_drive"
+                ],
+                "summary": "Returns a list of vehicle drives, for the given identifier.",
+                "description": "Object identifier means device identifier. Allows filtering by the date.",
+                "operationId": "vehicleDrive#listAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Identifier of the vehicle for which drives will be retrieved",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of filtering time range (format yyyy-mm-dd hh:mm:ss)",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Downloaded list successfully",
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "Operation success status",
+                                    "type": "boolean"
+                                },
+                                "data": {
+                                    "description": "List of vehicle drives",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/VehicleDrive"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "Alert": {
+            "description": "Notification",
+            "properties": {
+                "id": {
+                    "description": "Notification id",
+                    "type": "integer"
+                },
+                "time": {
+                    "description": "Time of notification generation",
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "name": {
+                    "description": "Message",
+                    "type": "string"
+                },
+                "device": {
+                    "description": "Name of the notified device",
+                    "type": "string"
+                },
+                "device_license": {
+                    "description": "Registration number of the notified device",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "CorrelatedAlertsByDay": {
+            "description": "Correlated alerts - daily statistics",
+            "properties": {
+                "count": {
+                    "description": "Number of occurrences of correlated alerts on a given day",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "BorderCrossing": {
+            "description": "Border Crossing",
+            "properties": {
+                "id": {
+                    "description": "Crossing ID",
+                    "type": "integer"
+                },
+                "device_id": {
+                    "description": "Device ID",
+                    "type": "integer"
+                },
+                "driver_code1": {
+                    "description": "Driver code (slot 1)",
+                    "type": "string"
+                },
+                "driver_code2": {
+                    "description": "Driver code (slot 2)",
+                    "type": "string"
+                },
+                "event_timestamp": {
+                    "description": "Border crossing time stamp  (UTC)",
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "departure_country": {
+                    "description": "Leaving country",
+                    "type": "string"
+                },
+                "entry_country": {
+                    "description": "Country visited",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "Course": {
+            "description": "Vehicle course",
+            "properties": {
+                "deviceId": {
+                    "description": "Device ID",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "deviceName": {
+                    "description": "Device name",
+                    "type": "string"
+                },
+                "loadingTs": {
+                    "description": "Start loading timestamp",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "unlodingTs": {
+                    "description": "End unloading timestamp",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "loadingDuration": {
+                    "description": "Loading time in seconds",
+                    "type": "integer"
+                },
+                "unloadingDuration": {
+                    "description": "Unloading time in seconds",
+                    "type": "integer"
+                },
+                "latLoading": {
+                    "description": "Latitude loading",
+                    "type": "number"
+                },
+                "lonLoading": {
+                    "description": "Longtitue loading",
+                    "type": "number"
+                },
+                "latUnloading": {
+                    "description": "Latitude unloading",
+                    "type": "number"
+                },
+                "lonUnloading": {
+                    "description": "Longtitue unloading",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "Drived distance in course in km",
+                    "type": "number"
+                },
+                "time": {
+                    "description": "Time for loading to unloading in seconds",
+                    "type": "integer"
+                },
+                "loadingAddress": {
+                    "description": "Loading adress",
+                    "type": "string"
+                },
+                "unloadingAddress": {
+                    "description": "Unloading adress",
+                    "type": "string"
+                },
+                "weightingTs": {
+                    "description": "Weighting timestamp",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "weightedMass": {
+                    "description": "Weighted mass",
+                    "type": "number"
+                },
+                "weightingId": {
+                    "description": "Weighted ID",
+                    "type": "number"
+                },
+                "company": {
+                    "description": "Name of company where weighing was done",
+                    "type": "string"
+                },
+                "material": {
+                    "description": "Material name",
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "Device": {
+            "description": "Device",
+            "properties": {
+                "id": {
+                    "description": "Device ID",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "name": {
+                    "description": "Device name",
+                    "type": "string"
+                },
+                "color": {
+                    "description": "Device color in HEX RGB format",
+                    "type": "string"
+                },
+                "license": {
+                    "description": "Device registration number",
+                    "type": "string"
+                },
+                "trackingStatus": {
+                    "description": "Device tracking status",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "immobilizer": {
+                    "description": "Immobilizer control support",
+                    "type": "boolean"
+                },
+                "canControlsDoors": {
+                    "description": "Door control support",
+                    "type": "boolean"
+                },
+                "taskTypes": {
+                    "description": "List of tasks supported by the device",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskType"
+                    }
+                },
+                "model": {
+                    "description": "Device model",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "DeviceMeters": {
+            "description": "Device meters",
+            "properties": {
+                "id": {
+                    "description": "Device ID",
+                    "type": "integer"
+                },
+                "ts": {
+                    "description": "Unix timestamp of gps position",
+                    "type": "integer"
+                },
+                "mileage": {
+                    "description": "Vehicle mileage (in meters)",
+                    "type": "number"
+                },
+                "motohours": {
+                    "description": "Vehicle motohours (in seconds)",
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "EtollDevice": {
+            "description": "E-Toll equipment with status",
+            "properties": {
+                "deviceId": {
+                    "description": "Device ID",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "deviceName": {
+                    "description": "Name",
+                    "type": "string"
+                },
+                "deviceColor": {
+                    "description": "Color in HEX RGB",
+                    "type": "string"
+                },
+                "licenseNumber": {
+                    "description": "License number",
+                    "type": "string"
+                },
+                "connectionStatus": {
+                    "description": "Status sending data to E-Toll system",
+                    "type": "integer",
+                    "format": "int32",
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4
+                    ]
+                },
+                "lastEtollDateFrame": {
+                    "description": "Timestamp last registered frame in E-Toll system",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "technicalId": {
+                    "description": "Bussiness id",
+                    "type": "string"
+                },
+                "technicalPin": {
+                    "description": "Pin",
+                    "type": "string"
+                },
+                "powerOn": {
+                    "description": "Connecting the device to the power supply",
+                    "type": "boolean"
+                },
+                "batteryLevel": {
+                    "description": "Battery charge level, value in range 0 - 100",
+                    "type": "integer"
+                },
+                "gsmSignalStrength": {
+                    "description": "Gsm signal strength",
+                    "type": "integer"
+                },
+                "satellites": {
+                    "description": "Number of satellites based on which location was determined",
+                    "type": "integer"
+                },
+                "longitude": {
+                    "description": "Longitude",
+                    "type": "number"
+                },
+                "latitude": {
+                    "description": "Latitude",
+                    "type": "number"
+                },
+                "etollTechBreak": {
+                    "description": "Interruption of E-TOLL service  true - break, false -  normal operation",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "SentGEODevice": {
+            "description": "Device with permission for E-TOLL and/or SENT module with status",
+            "properties": {
+                "deviceId": {
+                    "description": "Device ID",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "deviceName": {
+                    "description": "Name",
+                    "type": "string"
+                },
+                "deviceColor": {
+                    "description": "Color in HEX RGB",
+                    "type": "string"
+                },
+                "licenseNumber": {
+                    "description": "License number",
+                    "type": "string"
+                },
+                "connectionStatus": {
+                    "description": "Status sending data to E-Toll system",
+                    "type": "integer",
+                    "format": "int32",
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4
+                    ]
+                },
+                "lastEtollDateFrame": {
+                    "description": "Timestamp last registered frame in E-Toll system",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "technicalId": {
+                    "description": "Bussiness id",
+                    "type": "string"
+                },
+                "technicalPin": {
+                    "description": "Pin",
+                    "type": "string"
+                },
+                "powerOn": {
+                    "description": "Connecting the device to the power supply",
+                    "type": "boolean"
+                },
+                "batteryLevel": {
+                    "description": "Battery charge level, value in range 0 - 100",
+                    "type": "integer"
+                },
+                "gsmSignalStrength": {
+                    "description": "Gsm signal strength",
+                    "type": "integer"
+                },
+                "satellites": {
+                    "description": "Number of satellites based on which location was determined",
+                    "type": "integer"
+                },
+                "longitude": {
+                    "description": "Longitude",
+                    "type": "number"
+                },
+                "latitude": {
+                    "description": "Latitude",
+                    "type": "number"
+                },
+                "etollPermission": {
+                    "description": "Module E-TOLL is enabled",
+                    "type": "boolean"
+                },
+                "sentPermission": {
+                    "description": "Module SENT is enabled",
+                    "type": "boolean"
+                },
+                "sentEnabled": {
+                    "description": "Sending data to SENT service is active",
+                    "type": "boolean"
+                },
+                "sentStatus": {
+                    "description": "Status sending data to SENT service, -1 - ERROR, 0 - Disabled, 1 - OK, 2 - Waiting for first frame",
+                    "type": "integer",
+                    "enum": [
+                        -1,
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                "etollTechBreak": {
+                    "description": "Interruption of E-TOLL service",
+                    "type": "boolean",
+                    "enum": [
+                        false,
+                        true
+                    ]
+                }
+            },
+            "type": "object"
+        },
+        "GeoZone": {
+            "description": "Geo-zones",
+            "properties": {
+                "id": {
+                    "description": "Zone ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Zone Name",
+                    "type": "string"
+                },
+                "desc": {
+                    "description": "Zone Description",
+                    "type": "string"
+                },
+                "color": {
+                    "description": "Zone color in HEX RGB format",
+                    "type": "string"
+                },
+                "points": {
+                    "description": "List of zone boundary points",
+                    "type": "array",
+                    "items": {
+                        "description": "Coordinate pair",
+                        "type": "array",
+                        "items": {
+                            "description": "Coordinate",
+                            "type": "number",
+                            "format": "float"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                    }
+                }
+            },
+            "type": "object"
+        },
+        "Refueling": {
+            "description": "Refueling",
+            "properties": {
+                "date": {
+                    "description": "Refueling date time",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "fuelBefore": {
+                    "description": "Fuel level before reufel",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelAfter": {
+                    "description": "Fuel level after reufel",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelAmount": {
+                    "description": "Amount of fuel refueled",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lon": {
+                    "description": "Longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "address": {
+                    "description": "Refueling address",
+                    "type": "string"
+                },
+                "mileage": {
+                    "description": "Car mileage",
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "EngineWorkTime": {
+            "description": "EngineWorkTime",
+            "properties": {
+                "date": {
+                    "description": "Date",
+                    "type": "string",
+                    "example": "2022-01-10"
+                },
+                "startTime": {
+                    "description": "Engine start time",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "endTime": {
+                    "description": "Engine end time",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "workDuration": {
+                    "description": "Time betwen engine off and engine start (s)",
+                    "type": "double",
+                    "example": "36000"
+                },
+                "engineOnDuration": {
+                    "description": "Engine on duration (s)",
+                    "type": "double",
+                    "example": "35000"
+                },
+                "distance": {
+                    "description": "Distance between engine off and engine start (km)",
+                    "type": "double",
+                    "example": "9.1"
+                }
+            },
+            "type": "object"
+        },
+        "Position": {
+            "description": "GPS position",
+            "properties": {
+                "id": {
+                    "description": "Vehicle ID",
+                    "type": "integer"
+                },
+                "lon": {
+                    "description": "Longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "name": {
+                    "description": "Displayed device name for logged in user",
+                    "type": "string"
+                },
+                "license": {
+                    "description": "Vehicle Registration Number",
+                    "type": "string"
+                },
+                "direction": {
+                    "description": "Azimuth",
+                    "type": "number",
+                    "format": "float"
+                },
+                "speed": {
+                    "description": "Current speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "status": {
+                    "description": "Activity Status",
+                    "type": "integer"
+                },
+                "date": {
+                    "description": "Date item was generated",
+                    "type": "string",
+                    "example": "2021-12-15 17:49:50"
+                },
+                "trackingStatus": {
+                    "description": "Device tracking status",
+                    "type": "integer"
+                },
+                "privateMode": {
+                    "description": "Device private mode status",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "DetailedPosition": {
+            "description": "Detailed GPS position",
+            "properties": {
+                "id": {
+                    "description": "Vehicle ID",
+                    "type": "integer"
+                },
+                "lon": {
+                    "description": "Longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "direction": {
+                    "description": "Azimuth",
+                    "type": "number",
+                    "format": "float"
+                },
+                "status": {
+                    "description": "Activity Status",
+                    "type": "integer"
+                },
+                "date": {
+                    "description": "Date item was generated",
+                    "type": "string",
+                    "example": "2021-12-15 17:49:50"
+                },
+                "speed": {
+                    "description": "Current speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "duration": {
+                    "description": "Duration of stop",
+                    "type": "string",
+                    "example": "25 days 17 h. 32 min."
+                },
+                "location": {
+                    "description": "Location of the stop",
+                    "type": "string"
+                },
+                "mileage": {
+                    "description": "Vehicle mileage",
+                    "type": "number",
+                    "format": "float"
+                },
+                "trackingStatus": {
+                    "description": "Device tracking status",
+                    "type": "integer"
+                },
+                "immobilizer": {
+                    "description": "Immobilizer control support",
+                    "type": "integer"
+                },
+                "canControlsDoors": {
+                    "description": "Door control support",
+                    "type": "integer"
+                },
+                "other": {
+                    "description": "Additional data, dependent on device configuration",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AdditionalTelemetryData"
+                    }
+                },
+                "indicators": {
+                    "description": "List of dashboard controls",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/IndicatorsData"
+                    }
+                },
+                "doorStatus": {
+                    "description": "RouteController.",
+                    "$ref": "#/definitions/DoorStatusData"
+                },
+                "centralLockingLocked": {
+                    "description": "Door locking status",
+                    "type": "boolean"
+                },
+                "privateMode": {
+                    "description": "Driver private mode status",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "HistoryPosition": {
+            "description": "GPS position of route history",
+            "properties": {
+                "lon": {
+                    "description": "Longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "s": {
+                    "description": "Instantaneous speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "d": {
+                    "description": "Azimuth",
+                    "type": "number",
+                    "format": "float"
+                },
+                "date": {
+                    "description": "Position generation date",
+                    "type": "string",
+                    "example": "2021-12-15 17:49:50"
+                },
+                "privateMode": {
+                    "description": "Driver private mode status",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "Stoppage": {
+            "description": "Stop",
+            "properties": {
+                "lon": {
+                    "description": "Longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "begin": {
+                    "description": "Start of stop",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "end": {
+                    "description": "End of stop",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "location": {
+                    "description": "Location of the stop",
+                    "type": "string"
+                },
+                "duration": {
+                    "description": "Duration of stop in text form",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "RouteSummary": {
+            "description": "Route Summary",
+            "properties": {
+                "distance": {
+                    "description": "Distance traveled",
+                    "type": "number",
+                    "format": "float"
+                },
+                "speed_avg": {
+                    "description": "Average speed over distance",
+                    "type": "number",
+                    "format": "float"
+                },
+                "speed_max": {
+                    "description": "Maximum speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "drive_duration": {
+                    "description": "Drive duration",
+                    "type": "string"
+                },
+                "stoppage_duration": {
+                    "description": "Stoppage duration",
+                    "type": "string"
+                },
+                "fuel_cost": {
+                    "description": "Cost of fuel burned by standard",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuel_consumption": {
+                    "description": "Burnt fuel by norm",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuel_consumption100": {
+                    "description": "Burnt fuel by standard",
+                    "type": "number",
+                    "format": "float"
+                },
+                "real_fuel_cost": {
+                    "description": "Cost of fuel burned",
+                    "type": "number",
+                    "format": "float"
+                },
+                "real_fuel_consumption": {
+                    "description": "Fuel burned",
+                    "type": "number",
+                    "format": "float"
+                },
+                "real_fuel_consumption100": {
+                    "description": "Combustion",
+                    "type": "number",
+                    "format": "float"
+                },
+                "first_engine_on_date": {
+                    "description": "Date in format YYYY-MM-DD HH:ii:ss\n            of the first detected state: engine on in the specified time range. In case the engine was not turned on in the given\n            range, an empty string is returned.",
+                    "type": "string"
+                },
+                "last_engine_on_date": {
+                    "description": "Date in format YYYY-MM-DD HH:ii:ss\n            last detected state: engine on in the specified time range. In case the engine was not turned on in the given\n            range, an empty string is returned.",
+                    "type": "string"
+                },
+                "engine_on_boundaries_duration": {
+                    "description": "Length of detected engine running activity\n                engine activity detected within the specified range in seconds, defined as the period from the first detected state: engine\n                on to the last detected state: engine on within the given time range. In case\n                if the engine was not on in the specified range, the value 0 is returned",
+                    "type": "string"
+                },
+                "distance_distribution": {
+                    "description": "An array with data about the\n            speed distribution and distance traveled.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/SummaryDistanceDistributionData"
+                    }
+                },
+                "values": {
+                    "description": "Additional data, dependent on device configuration",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AdditionalTelemetryData"
+                    }
+                }
+            },
+            "type": "object"
+        },
+        "SummaryDistanceDistributionData": {
+            "description": "Distance and speed distribution element",
+            "properties": {
+                "distance": {
+                    "description": "Distance value",
+                    "type": "string"
+                },
+                "color": {
+                    "description": "Color in HEX",
+                    "type": "string"
+                },
+                "percent": {
+                    "description": "Percent distribution",
+                    "type": "number",
+                    "format": "float"
+                },
+                "width": {
+                    "description": "Width in px to display",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "AdditionalTelemetryData": {
+            "description": "Additional telemetry data",
+            "properties": {
+                "index": {
+                    "description": "Data type name",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Data label",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "Value",
+                    "type": "string"
+                },
+                "unit": {
+                    "description": "Unit",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "IndicatorsData": {
+            "description": "Dashboard control",
+            "properties": {
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "state": {
+                    "description": "State (off or on)",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "icon": {
+                    "description": "Path to icon",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Control description",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "DoorStatusData": {
+            "description": "Door Status",
+            "properties": {
+                "frontLeftOpen": {
+                    "description": "Front left door status",
+                    "type": "boolean"
+                },
+                "frontRightOpen": {
+                    "description": "Right front door status",
+                    "type": "boolean"
+                },
+                "rearLeftOpen": {
+                    "description": "Status of rear left door",
+                    "type": "boolean"
+                },
+                "rearRightOpen": {
+                    "description": "Right rear door status",
+                    "type": "boolean"
+                },
+                "trunkOpen": {
+                    "description": "Trunk lid status",
+                    "type": "boolean"
+                },
+                "engineCoverOpen": {
+                    "description": "State of engine cover",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "SentStatus": {
+            "description": "SENT status",
+            "properties": {
+                "deviceId": {
+                    "description": "Device ID",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "sentEnabled": {
+                    "description": "System sent status",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "Task": {
+            "description": "Task",
+            "properties": {
+                "id": {
+                    "description": "Task ID",
+                    "type": "integer"
+                },
+                "user_id": {
+                    "description": "Task owner ID",
+                    "type": "integer"
+                },
+                "author_id": {
+                    "description": "Job author ID",
+                    "type": "integer"
+                },
+                "executor_id": {
+                    "description": "Identifier of the user executing the task",
+                    "type": "integer"
+                },
+                "modifier_id": {
+                    "description": "ID of the user last editing the task",
+                    "type": "integer"
+                },
+                "author_login": {
+                    "description": "User name of the task author",
+                    "type": "string"
+                },
+                "executor_login": {
+                    "description": "User name of the task executor",
+                    "type": "string"
+                },
+                "modifier_login": {
+                    "description": "Name of the user last editing the task",
+                    "type": "string"
+                },
+                "device_id": {
+                    "description": "ID of the device associated with the task",
+                    "type": "integer"
+                },
+                "device_license": {
+                    "description": "Registration number of the device associated with the task",
+                    "type": "string"
+                },
+                "number": {
+                    "description": "Task number",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Task type",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                "type_label": {
+                    "description": "Task type label",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Task status",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        4,
+                        8,
+                        16
+                    ]
+                },
+                "status_name": {
+                    "description": "Task status name",
+                    "type": "string"
+                },
+                "status_label": {
+                    "description": "Task status label",
+                    "type": "string"
+                },
+                "cstatus": {
+                    "description": "Task communication status",
+                    "type": "integer"
+                },
+                "cstatus_label": {
+                    "description": "Task communication status label",
+                    "type": "string"
+                },
+                "begin_date": {
+                    "description": "Task start date",
+                    "type": "string",
+                    "example": "2021-12-06 11:38:18"
+                },
+                "begin_longitude": {
+                    "description": "Longitude of task start",
+                    "type": "number",
+                    "format": "float"
+                },
+                "begin_latitude": {
+                    "description": "Latitude of task start",
+                    "type": "number",
+                    "format": "float"
+                },
+                "end_date": {
+                    "description": "Task end date",
+                    "type": "string",
+                    "example": "2021-12-06 11:38:18"
+                },
+                "end_longitude": {
+                    "description": "Longitude of end of task",
+                    "type": "number",
+                    "format": "float"
+                },
+                "end_latitude": {
+                    "description": "Latitude of task completion",
+                    "type": "number",
+                    "format": "float"
+                },
+                "distance": {
+                    "description": "Distance traveled in task",
+                    "type": "number",
+                    "format": "float"
+                },
+                "begin_location": {
+                    "description": "Task begin location",
+                    "type": "string"
+                },
+                "end_location": {
+                    "description": "Task end location",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Job creation time",
+                    "type": "string",
+                    "example": "2021-12-06 11:38:18"
+                },
+                "updated_at": {
+                    "description": "Time the task was last edited",
+                    "type": "string",
+                    "example": "2021-12-06 11:38:18"
+                },
+                "sent_last_position_ts": {
+                    "description": "Time of last sent item to the sent system for the job",
+                    "type": "integer"
+                },
+                "sent_last_confirmed_position_ts": {
+                    "description": "Time of last confirmed item to system sent for job",
+                    "type": "integer"
+                },
+                "sent_last_confirmation_ts": {
+                    "description": "Time of last confirmed item to the sent system for the job",
+                    "type": "integer"
+                },
+                "distance_for_accept": {
+                    "description": "Distance to override",
+                    "type": "number",
+                    "format": "float"
+                },
+                "distance_change_accept": {
+                    "description": "Negotiate task override",
+                    "type": "boolean"
+                },
+                "distance_change_confirmation_send": {
+                    "description": "Negotiating task override",
+                    "type": "boolean"
+                },
+                "modification_exist": {
+                    "description": "Negotiating task override",
+                    "type": "boolean"
+                },
+                "modification_override_accept": {
+                    "description": "Negotiate task override",
+                    "type": "boolean"
+                }
+            },
+            "type": "object"
+        },
+        "TaskType": {
+            "description": "Task type",
+            "properties": {
+                "id": {
+                    "description": "Task Type Identifier",
+                    "type": "integet",
+                    "format": "int32",
+                    "enum": [
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                "name": {
+                    "description": "Name of task type",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "TaskStatus": {
+            "description": "Task status",
+            "properties": {
+                "status": {
+                    "description": "Status identifier",
+                    "type": "integer",
+                    "format": "int32",
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        4,
+                        8,
+                        16
+                    ]
+                },
+                "status_name": {
+                    "description": "Status name",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "status_label": {
+                    "description": "Status label",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object"
+        },
+        "User": {
+            "description": "User in system",
+            "properties": {
+                "apikey": {
+                    "description": "User API key",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "User name",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "VehicleDrive": {
+            "description": "VehicleDrive",
+            "properties": {
+                "vehicleId": {
+                    "description": "Vehicle ID",
+                    "type": "integer"
+                },
+                "startTime": {
+                    "description": "Start time",
+                    "type": "string",
+                    "example": "2022-01-10 11:33:44"
+                },
+                "endTime": {
+                    "description": "End time",
+                    "type": "string",
+                    "example": "2022-01-10 11:35:50"
+                },
+                "driverId": {
+                    "description": "Driver ID. Null if no driver was detected.",
+                    "type": "integer",
+                    "example": "1"
+                },
+                "avgSpeed": {
+                    "description": "Average speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "maxSpeed": {
+                    "description": "Maximum speed",
+                    "type": "number",
+                    "format": "float"
+                },
+                "mileageStart": {
+                    "description": "Mileage at the start",
+                    "type": "number",
+                    "format": "float"
+                },
+                "mileageEnd": {
+                    "description": "Mileage at the end",
+                    "type": "number",
+                    "format": "float"
+                },
+                "startLatitude": {
+                    "description": "Starting latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "startLongitude": {
+                    "description": "Starting longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "endLatitude": {
+                    "description": "Ending latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "endLongitude": {
+                    "description": "Ending longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "distanceBusiness": {
+                    "description": "Business distance",
+                    "type": "number",
+                    "format": "float"
+                },
+                "distancePrivate": {
+                    "description": "Private distance",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelLevelStart": {
+                    "description": "Fuel level at the start",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelLevelEnd": {
+                    "description": "Fuel level at the end",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelConsumptionBusiness": {
+                    "description": "Business fuel consumption",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelConsumptionPrivate": {
+                    "description": "Private fuel consumption",
+                    "type": "number",
+                    "format": "float"
+                },
+                "businessTransits": {
+                    "description": "List of business transits. Present if there are multiple transits due to mode changes during single drive.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VehicleDriveTransit"
+                    }
+                },
+                "privateTransits": {
+                    "description": "List of private transits. Present if there are multiple transits due to mode changes during single drive.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VehicleDriveTransit"
+                    }
+                },
+                "mode": {
+                    "description": "Drive mode",
+                    "type": "string",
+                    "enum": [
+                        "BUSINESS",
+                        "PRIVATE",
+                        "MIXED"
+                    ]
+                },
+                "avgFuelConsumption": {
+                    "description": "Average fuel consumption",
+                    "type": "number",
+                    "format": "float"
+                },
+                "engineWorkTime": {
+                    "description": "Engine work time in seconds",
+                    "type": "integer"
+                },
+                "startAddress": {
+                    "description": "Starting address",
+                    "type": "string"
+                },
+                "endAddress": {
+                    "description": "Ending address",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "VehicleDriveTransit": {
+            "description": "VehicleDriveTransit",
+            "properties": {
+                "driverId": {
+                    "description": "Driver ID. Null if no driver was detected.",
+                    "type": "integer",
+                    "example": "1234"
+                },
+                "startTime": {
+                    "description": "Start time",
+                    "type": "string",
+                    "example": "2023-09-10 11:33:44"
+                },
+                "endTime": {
+                    "description": "End time",
+                    "type": "string",
+                    "example": "2023-09-10 11:35:50"
+                },
+                "startLatitude": {
+                    "description": "Starting latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "startLongitude": {
+                    "description": "Starting longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "endLatitude": {
+                    "description": "Ending latitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "endLongitude": {
+                    "description": "Ending longitude",
+                    "type": "number",
+                    "format": "float"
+                },
+                "distance": {
+                    "description": "Distance",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuel": {
+                    "description": "Fuel consumed during transit",
+                    "type": "number",
+                    "format": "float"
+                },
+                "engineWorkTime": {
+                    "description": "Engine work time during transit",
+                    "type": "number",
+                    "format": "float"
+                },
+                "fuelAverageConsumption": {
+                    "description": "Average fuel consumption during transit",
+                    "type": "number",
+                    "format": "float"
+                },
+                "startAddress": {
+                    "description": "Starting address for the transit",
+                    "type": "string"
+                },
+                "endAddress": {
+                    "description": "Ending address for the transit",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "responses": {
+        "BadRequest": {
+            "description": "Required parameter missing",
+            "schema": {
+                "properties": {
+                    "success": {
+                        "description": "Operation success status",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "msg": {
+                        "description": "Error message",
+                        "type": "string",
+                        "example": "Bad request"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "Unauthorized": {
+            "description": "No authorisation",
+            "schema": {
+                "properties": {
+                    "success": {
+                        "description": "Operation success status",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "msg": {
+                        "description": "Error message",
+                        "type": "string",
+                        "example": "Unauthorized"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "Forbidden": {
+            "description": "No entitlement to exercise shares",
+            "schema": {
+                "properties": {
+                    "success": {
+                        "description": "Operation success status",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "data": {
+                        "description": "Error message",
+                        "type": "string",
+                        "example": "Forbidden"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "NotFound": {
+            "description": "The requested object was not found",
+            "schema": {
+                "properties": {
+                    "success": {
+                        "description": "Operation success status",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "data": {
+                        "description": "Error message",
+                        "type": "string",
+                        "example": "Not found"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKey": {
+            "type": "apiKey",
+            "description": "Klucz API",
+            "name": "apikey",
+            "in": "query"
+        }
+    },
+    "tags": [
+        {
+            "name": "alerts",
+            "description": "Notifications"
+        },
+        {
+            "name": "borderCrossings",
+            "description": "Border Crossings"
+        },
+        {
+            "name": "charts",
+            "description": "Data for graphs"
+        },
+        {
+            "name": "courses",
+            "description": "Course"
+        },
+        {
+            "name": "devices",
+            "description": "Devices"
+        },
+        {
+            "name": "etollDevices",
+            "description": "Urz\u0105dzenia E-Toll"
+        },
+        {
+            "name": "geozones",
+            "description": "Geo-zones"
+        },
+        {
+            "name": "pushnotifications",
+            "description": "Push notifications"
+        },
+        {
+            "name": "refueling",
+            "description": "Refueling"
+        },
+        {
+            "name": "reports",
+            "description": "Report"
+        },
+        {
+            "name": "routes",
+            "description": "Routes"
+        },
+        {
+            "name": "sentStatus",
+            "description": "SENT Status"
+        },
+        {
+            "name": "tasks",
+            "description": "Tasks"
+        },
+        {
+            "name": "users",
+            "description": "System users"
+        },
+        {
+            "name": "vehicledrives",
+            "description": "VehicleDrive"
+        }
+    ]
+}
