@@ -3,6 +3,7 @@
 namespace Maslosoft\ApiFacades\Models;
 
 use Maslosoft\ApiFacades\Exceptions\BadVerbException;
+use Maslosoft\ApiFacades\Models\Base\BaseVerb;
 
 /**
  * @template TGet
@@ -11,27 +12,8 @@ use Maslosoft\ApiFacades\Exceptions\BadVerbException;
  * @template TDelete
  * @template TPatch
  */
-final class Verb
+class Verb extends BaseVerb
 {
-	/** @var array<string, callable> */
-	private array $verbs;
-	private string $owner;
-	private string $method;
-
-	public function __construct(
-		array|string  $verbs,
-		string $owner,
-		string $method
-	)
-	{
-		$this->method = $method;
-		$this->owner = $owner;
-		if(is_string($verbs))
-		{
-			$verbs = [$verbs];
-		}
-		$this->verbs = $verbs;
-	}
 
 	/** @return TGet */
 	public function get(...$arguments)
@@ -72,7 +54,7 @@ final class Verb
 	{
 		if(!array_key_exists($verb, $this->verbs))
 		{
-			throw new BadVerbException("{$this->owner}::{$this->method}() does not support verb '{$verb}'.");
+			throw new BadVerbException("{$this->client}::{$this->method}() does not support verb '{$verb}'.");
 		}
 		return ($this->verbs[$verb])(...$arguments);
 	}

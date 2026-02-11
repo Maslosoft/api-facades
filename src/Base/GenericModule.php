@@ -2,7 +2,10 @@
 
 namespace Maslosoft\ApiFacades\Base;
 
-class GenericModule
+/**
+ * Generic base class for module
+ */
+abstract class GenericModule
 {
 
 }

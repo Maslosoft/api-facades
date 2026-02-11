@@ -7,9 +7,13 @@ use Maslosoft\ApiFacades\Hydrators\Casts\Cast;
 use Maslosoft\ApiFacades\Hydrators\Casts\CastArray;
 use Maslosoft\ApiFacades\Hydrators\Casts\Scalar;
 use Maslosoft\ApiFacades\Hydrators\Casts\ScalarArray;
+use Maslosoft\ApiFacades\Interfaces\Hydrator;
+use ReflectionNamedType;
+use ReflectionObject;
+use ReflectionProperty;
 use ReflectionUnionType;
 
-class ObjectProperties
+class ObjectProperties implements Hydrator
 {
 	/**
 	 * Populates the properties of the given object with the corresponding values from the provided data array. The
@@ -32,9 +36,9 @@ class ObjectProperties
 	 */
 	public function hydrate(object $object, array $data): object
 	{
-		$reflection = new \ReflectionObject($object);
+		$reflection = new ReflectionObject($object);
 
-		foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property)
+		foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property)
 		{
 			if ($property->isStatic())
 			{
@@ -91,7 +95,7 @@ class ObjectProperties
 				));
 			}
 
-			if (!$type instanceof \ReflectionNamedType)
+			if (!$type instanceof ReflectionNamedType)
 			{
 				$property->setValue($object, $value);
 				continue;
