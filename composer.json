@@ -16,6 +16,11 @@
             "src/Logging.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Models\\": "tests/Models"
+        }
+    },
     "authors": [
         {
             "name": "Peter Maselkowski",
