@@ -5,7 +5,7 @@
         "codeception/codeception": "^5",
         "codeception/module-asserts": "^3",
         "codeception/module-phpbrowser": "*",
-        "maslosoft/codeception-reflection-asserts": "^1.0"
+        "maslosoft/codeception-reflection-asserts": "^1"
     },
     "license": "MIT",
     "autoload": {
