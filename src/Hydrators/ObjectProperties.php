@@ -16,14 +16,14 @@ class ObjectProperties
 	 * union types are not supported because that would cause ambiguity. The union types are allowed only if used together with explicit
 	 * #[Cast] or #[Scalar] attribute.
 	 *
-	 * The hydrator can use `Cast` attributes to cast values into specific types, or `CastArray` to cast arrays of objects.
+	 * The hydrator can use #[Cast] attributes to cast values into specific types (classes), or #[CastArray] to cast arrays of objects.
 	 *
 	 * The hydrator works recursively, so nested objects are also hydrated whether the property should be casted to object.
 	 *
 	 * @see Cast
 	 * @see CastArray
 	 * @throws UnsupportedTypeException If property type is union type.
-	 * @param object $object The object to be hydrated.
+	 * @param object $object The object (data model) to be hydrated.
 	 * @param array $data An associative array containing the data to apply to the object.
 	 * @return object The hydrated object with updated properties.
 	 */
