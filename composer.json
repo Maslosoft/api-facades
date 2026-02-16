@@ -29,12 +29,14 @@
     ],
     "require": {
         "php": ">=8.3",
-        "jane-php/open-api-3": "*",
         "maslosoft/cli-shared": "*",
-        "maslosoft/embedi": "^2|^3",
-        "maslosoft/light": "^1|^2",
-        "monolog/monolog": "^3.10",
+        "maslosoft/embedi": "^2|^3|^4",
+        "maslosoft/light": "^1|^2|^4",
+        "monolog/monolog": ">=2",
         "symfony/yaml": ">2.6"
+    },
+    "suggest": {
+        "jane-php/open-api-3": "Generate OpenAPI client from OpenAPI spec"
     },
     "config": {
         "allow-plugins": {
