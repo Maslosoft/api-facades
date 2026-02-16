@@ -3,10 +3,13 @@
 namespace Tests\Unit\Hydrators;
 
 use Maslosoft\ApiFacades\Exceptions\UnsupportedTypeException;
+use Maslosoft\ApiFacades\Hydrators\HydrationConfig;
 use Maslosoft\ApiFacades\Hydrators\ObjectProperties;
 use Tests\Models\Hydration\ArrayCastModel;
 use Tests\Models\Hydration\CastChild;
+use Tests\Models\Hydration\CamelizeModel;
 use Tests\Models\Hydration\DefaultValuesModel;
+use Tests\Models\Hydration\InputFieldModel;
 use Tests\Models\Hydration\InterfaceParentModel;
 use Tests\Models\Hydration\ParentModel;
 use Tests\Models\Hydration\ScalarArrayModel;
@@ -39,6 +42,70 @@ class ObjectPropertiesTest extends Unit
 		$this->assertSame(3.5, $model->floatValue);
 		$this->assertTrue($model->boolValue);
 		$this->assertSame('123', $model->stringValue);
+	}
+
+	public function testHydratesSnakeCaseInputInAutoMode(): void
+	{
+		$hydrator = new ObjectProperties();
+		$model = new CamelizeModel();
+
+		$hydrator->hydrate($model, [
+			'user_name' => 'Jane',
+			'email_address' => 'jane@example.com',
+		]);
+
+		$this->assertSame('Jane', $model->userName);
+		$this->assertSame('jane@example.com', $model->emailAddress);
+	}
+
+	public function testHydratesSnakeCaseInputInEnabledMode(): void
+	{
+		$hydrator = new ObjectProperties(new HydrationConfig(HydrationConfig::CamelizeEnabled));
+		$model = new CamelizeModel();
+
+		$hydrator->hydrate($model, [
+			'user_name' => 'Kate',
+		]);
+
+		$this->assertSame('Kate', $model->userName);
+	}
+
+	public function testDisablesCamelizeInput(): void
+	{
+		$hydrator = new ObjectProperties(new HydrationConfig(HydrationConfig::CamelizeDisabled));
+		$model = new CamelizeModel();
+
+		$hydrator->hydrate($model, [
+			'user_name' => 'Ignored',
+		]);
+
+		$this->assertSame('', $model->userName);
+	}
+
+	public function testHydratesUsingInputFieldAttribute(): void
+	{
+		$hydrator = new ObjectProperties();
+		$model = new InputFieldModel();
+
+		$hydrator->hydrate($model, [
+			'user_name' => 'John',
+			'status' => 'ok',
+		]);
+
+		$this->assertSame('John', $model->userName);
+		$this->assertSame('ok', $model->status);
+	}
+
+	public function testInputFieldAttributeIgnoresCamelization(): void
+	{
+		$hydrator = new ObjectProperties(new HydrationConfig(HydrationConfig::CamelizeEnabled));
+		$model = new InputFieldModel();
+
+		$hydrator->hydrate($model, [
+			'userName' => 'Wrong',
+		]);
+
+		$this->assertSame('default', $model->userName);
 	}
 
 	public function testHydratesScalarFromUnionUsingAttribute(): void

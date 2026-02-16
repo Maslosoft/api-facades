@@ -32,6 +32,41 @@ Which gets response from: htttps://example.com/api/v1/settlements/balance/show
 composer require maslosoft/api-facades --dev
 ```
 
+## Hydration
+
+The `ObjectProperties` hydrator populates public properties using reflection. It supports `#[Cast]`, `#[CastArray]`,
+`#[Scalar]`, and `#[ScalarArray]` attributes.
+
+### Input field mapping and camelization
+
+Use `#[InputField('field_name')]` to map an input field to a property. When an input field is explicitly defined,
+camelization is ignored for that property.
+
+Camelizing input keys (for example, `user_name` -> `userName`) can be configured through `HydrationConfig`:
+- `HydrationConfig::CamelizeAuto` (default) - camelize when snake_case keys are present.
+- `HydrationConfig::CamelizeEnabled` - always allow snake_case mapping.
+- `HydrationConfig::CamelizeDisabled` - disable snake_case mapping.
+
+```php
+use Maslosoft\ApiFacades\Hydrators\Attributes\InputField;
+use Maslosoft\ApiFacades\Hydrators\HydrationConfig;
+use Maslosoft\ApiFacades\Hydrators\ObjectProperties;
+
+class User
+{
+	#[InputField('user_name')]
+	public string $userName = '';
+
+	public string $emailAddress = '';
+}
+
+$hydrator = new ObjectProperties(new HydrationConfig(HydrationConfig::CamelizeAuto));
+$user = $hydrator->hydrate(new User(), [
+	'user_name' => 'Jane',
+	'email_address' => 'jane@example.com',
+]);
+```
+
 ## Unit tests
 
 To create unit test, `make` may be used with self-explanatory command, for example:
@@ -46,8 +81,8 @@ Will generate new unit test class in:
 tests/Unit/GenerateTrimTest.php
 ```
 
-Keep in mind to use forward slash for namespace of tests, as `\` may be interpreted as ascape character and generated class namespece will be wrong.
+Keep in mind to use forward slash for namespace of tests, as `\` may be interpreted as escape character and generated class namespece will be wrong.
 
 ## Templates
 
-Templates are stored as md files. This allows syntax highlighting, while not showing errors when using placeholders.
+Templates are stored as md files. This allows syntax highlighting while not showing errors when using placeholders.

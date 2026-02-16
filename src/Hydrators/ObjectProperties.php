@@ -2,6 +2,7 @@
 
 namespace Maslosoft\ApiFacades\Hydrators;
 
+use Maslosoft\ApiFacades\Hydrators\Attributes\InputField;
 use Maslosoft\ApiFacades\Exceptions\UnsupportedTypeException;
 use Maslosoft\ApiFacades\Hydrators\Casts\Cast;
 use Maslosoft\ApiFacades\Hydrators\Casts\CastArray;
@@ -15,6 +16,13 @@ use ReflectionUnionType;
 
 class ObjectProperties implements Hydrator
 {
+	private HydrationConfig $config;
+
+	public function __construct(?HydrationConfig $config = null)
+	{
+		$this->config = $config ?? new HydrationConfig();
+	}
+
 	/**
 	 * Populates the properties of the given object with the corresponding values from the provided data array. The
 	 * object's properties must be public and writable and defined explicitly in code, as hydrator uses reflection to enumerate and analyze them.
@@ -24,6 +32,7 @@ class ObjectProperties implements Hydrator
 	 * #[Cast] or #[Scalar] attribute.
 	 *
 	 * The hydrator can use #[Cast] attributes to cast values into specific types (classes), or #[CastArray] to cast arrays of objects.
+	 * It can also use #[InputField('field_name')] to map input field names to properties.
 	 *
 	 * The hydrator works recursively, so nested objects are also hydrated whether the property should be casted to object.
 	 *
@@ -37,6 +46,7 @@ class ObjectProperties implements Hydrator
 	public function hydrate(object $object, array $data): object
 	{
 		$reflection = new ReflectionObject($object);
+		$camelizeInput = $this->config->shouldCamelizeInput($data);
 
 		foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property)
 		{
@@ -45,13 +55,14 @@ class ObjectProperties implements Hydrator
 				continue;
 			}
 
-			$propertyName = $property->getName();
-			if (!array_key_exists($propertyName, $data))
+			$inputFieldName = $this->resolveInputFieldName($property, $data, $camelizeInput);
+			if ($inputFieldName === null)
 			{
 				continue;
 			}
 
-			$value = $data[$propertyName];
+			$propertyName = $property->getName();
+			$value = $data[$inputFieldName];
 
 			$castAttributes = $property->getAttributes(Cast::class);
 			if (!empty($castAttributes))
@@ -118,6 +129,44 @@ class ObjectProperties implements Hydrator
 		}
 
 		return $object;
+	}
+
+	/**
+	 * @param array<string,mixed> $data
+	 */
+	private function resolveInputFieldName(ReflectionProperty $property, array $data, bool $camelizeInput): ?string
+	{
+		$inputFieldAttributes = $property->getAttributes(InputField::class);
+		if (!empty($inputFieldAttributes))
+		{
+			$inputField = $inputFieldAttributes[0]->newInstance();
+			return array_key_exists($inputField->name, $data) ? $inputField->name : null;
+		}
+
+		$propertyName = $property->getName();
+		if (array_key_exists($propertyName, $data))
+		{
+			return $propertyName;
+		}
+
+		if (!$camelizeInput)
+		{
+			return null;
+		}
+
+		$snakeName = $this->toSnakeCase($propertyName);
+		if ($snakeName !== $propertyName && array_key_exists($snakeName, $data))
+		{
+			return $snakeName;
+		}
+
+		return null;
+	}
+
+	private function toSnakeCase(string $value): string
+	{
+		$snake = preg_replace('/(?<!^)[A-Z]/', '_$0', $value);
+		return strtolower($snake ?? $value);
 	}
 
 	private function castBuiltinValue(mixed $value, string $type): mixed
