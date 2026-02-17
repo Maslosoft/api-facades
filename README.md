@@ -1,5 +1,13 @@
 # API Facades
+
 API Facades generator, allowing to call OpenAPI compatible API's with fluid interfaces.
+
+### 🤖✨👱🏻 Made by human an Ai
+
+Project developed with help of an Ai. This project is **still in development**, and
+only features currently required are being implemented and tested. 
+
+## Description
 
 The idea is to use natural path-like syntax, instead of method names clumps. The API call is basically last
 method which is the verb of request.
