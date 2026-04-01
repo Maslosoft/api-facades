@@ -5,13 +5,20 @@
 This example shows how the generated classes should work.
 
 The most simple example is to get `admin/runs`, so we first need to instantiate the client,
-and then just call relevent methods, names same as URL:
+and then just call relevant Verb methods, names path is same as URL:
 
 ```php
 use Examples\Expected01\Client01;
 
 $client = new Client01();
-$client->admin->runs();
+$client->admin->runs->get();
 ```
 
 The runs result is populated by chosen hydrator and model type.
+
+Each Verb is custom generated, so it hints exact parameters and hydrated return types.
+Also, because only relevant verbs and modules exist, the non-existing endpoints will not
+be type hinted.
+
+OpenAPI spec used: `./openapi.01.json`
+API Facades config used: `./api-facades.01.php`

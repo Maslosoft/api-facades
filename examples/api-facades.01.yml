@@ -1,0 +1,34 @@
+# TODO: This is config structure draft, everything may be changed
+jane:
+  # Whether to annotate Jane classes with @internal to hint IDE to not suggest those classes
+  markInternal: true
+input:
+  location: openapi.01.json
+generate:
+  modules:
+    #
+    namer:
+      class: Maslosoft\ApiFacades\Namers\Module\UrlNamer
+      processors:
+        # Tags configuration used when generating from tags
+        firstTag:
+          class: Maslosoft\ApiFacades\Processors\Tags\FirstTag
+        # URLs configuration when generating from URLs is used
+        trimUrl:
+          class: Maslosoft\ApiFacades\Processors\Url\TrimPrefix
+          # Skip part of URL starring with this string
+          prefix: "api"
+    baseClass: Maslosoft\ApiFacades\Base\GenericModule
+  operations:
+    namer:
+      class: Maslosoft\ApiFacades\Namers\Operations\OperationId
+    baseClass: Maslosoft\ApiFacades\Base\GenericOperation
+output:
+  # Adjust to requirements
+  namespace: Examples\Expected01
+  # API facade Root class
+  class: Client01
+  # Discover directory based on PSR-4 composer.json autoload
+  discoverOutput: false
+  # If not empty, this output directory will be used
+  path: "expected.01"
