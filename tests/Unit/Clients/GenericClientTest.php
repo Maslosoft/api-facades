@@ -60,4 +60,20 @@ class GenericClientTest extends Unit
 
 		$client->getData('/api/users/{id}', 'get');
 	}
+
+	public function testSendsCustomHeaders(): void
+	{
+		$client = new TestingClient();
+		$client->baseUrl = 'https://api.example.com';
+		$client->response = '{"ok":true}';
+
+		$data = $client->getData('/api/users', 'get', [], [], [
+			'X-Api-Key' => 'secret',
+			'X-Trace-Id' => 'abc-123',
+		]);
+
+		$this->assertSame(['ok' => true], $data);
+		$this->assertContains('X-Api-Key: secret', $client->lastRequest['headers']);
+		$this->assertContains('X-Trace-Id: abc-123', $client->lastRequest['headers']);
+	}
 }

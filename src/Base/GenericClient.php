@@ -50,9 +50,10 @@ abstract class GenericClient
 	 * @param string $method Method as per HTTP specification, e.g. 'get', 'post', 'put', 'delete'
 	 * @param array $params Array key-values matching parameter names in endpoint URL.
 	 * @param mixed $body Arbitrary data to be sent as request body, the only requirement is that it can be converted to JSON.
+	 * @param array<string, scalar|\BackedEnum|null> $headers Additional request headers.
 	 * @return mixed
 	 */
-	public function getData(string $endpoint, string $method, array $params = [], mixed $body = []): mixed
+	public function getData(string $endpoint, string $method, array $params = [], mixed $body = [], array $headers = []): mixed
 	{
 		$method = strtoupper($method);
 		$endpoint = $this->applyParamsToEndpoint($endpoint, $params);
@@ -70,7 +71,7 @@ abstract class GenericClient
 			}
 		}
 
-		$headers = ['Accept: application/json'];
+		$requestHeaders = ['Accept: application/json'];
 		$payload = null;
 		if ($body !== [] && $body !== null)
 		{
@@ -82,10 +83,15 @@ abstract class GenericClient
 			{
 				throw new BadParamsException('Request body could not be encoded as JSON.', 0, $exception);
 			}
-			$headers[] = 'Content-Type: application/json';
+			$requestHeaders[] = 'Content-Type: application/json';
 		}
 
-		$response = $this->request($url, $method, $headers, $payload);
+		foreach ($this->normalizeHeaders($headers) as $header)
+		{
+			$requestHeaders[] = $header;
+		}
+
+		$response = $this->request($url, $method, $requestHeaders, $payload);
 		if (trim($response) === '')
 		{
 			return [];
@@ -184,5 +190,35 @@ abstract class GenericClient
 		}
 
 		return $value;
+	}
+
+	/**
+	 * @param array<string, scalar|BackedEnum|null> $headers
+	 * @return string[]
+	 */
+	private function normalizeHeaders(array $headers): array
+	{
+		$result = [];
+
+		foreach ($headers as $name => $value)
+		{
+			$name = trim((string)$name);
+			if ($name === '' || $value === null)
+			{
+				continue;
+			}
+			if ($value instanceof BackedEnum)
+			{
+				$value = $value->value;
+			}
+			if (!is_scalar($value))
+			{
+				throw new BadParamsException("Header `{$name}` must be a scalar value.");
+			}
+
+			$result[] = $name . ': ' . (string)$value;
+		}
+
+		return $result;
 	}
 }

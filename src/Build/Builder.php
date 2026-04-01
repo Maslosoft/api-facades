@@ -69,6 +69,8 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$rootModules = [];
 		$rootVerbs = [];
 		$usedModelNames = [];
+		$pathEntries = [];
+		$moduleKeys = [];
 
 		foreach ((array)($spec->raw['paths'] ?? []) as $rawPath => $pathItem)
 		{
@@ -93,20 +95,44 @@ class Builder extends BaseBuilder implements BuilderInterface
 				$segments = [$fallbackName === '' ? 'operation' : $fallbackName];
 			}
 
-			$operationSegment = array_pop($segments);
-			$moduleSegments = array_values($segments);
-			$operationName = $this->normalizeIdentifier((string)$operationSegment, 'operation');
-			$verbInfo = $this->resolveVerbInfo($moduleSegments, $operationName);
-
-			$verbSpec = [
-				'namespace' => $verbInfo['namespace'],
-				'class' => $verbInfo['class'],
-				'fqcn' => $verbInfo['fqcn'],
-				'path' => $verbInfo['path'],
-				'property' => $operationName,
-				'methods' => $operations,
-				'invokeMethod' => $this->resolveInvokeMethod($operations),
+			$pathEntries[] = [
+				'segments' => $segments,
+				'operations' => $operations,
 			];
+
+			if (count($segments) > 1)
+			{
+				for ($index = 1; $index < count($segments); $index++)
+				{
+					$moduleKeys[implode('/', array_slice($segments, 0, $index))] = true;
+				}
+			}
+		}
+
+		foreach ($pathEntries as $entry)
+		{
+			$segments = $entry['segments'];
+			$pathKey = implode('/', $segments);
+
+			if ($pathKey !== '' && isset($moduleKeys[$pathKey]))
+			{
+				$this->ensureModuleChain($moduleSpecs, $rootModules, $segments);
+				$ownVerb = $this->createVerbSpec(
+					$segments,
+					$this->normalizeIdentifier((string)end($segments), 'operation'),
+					$entry['operations'],
+					true
+				);
+				$verbSpecs[$ownVerb['fqcn']] = $ownVerb;
+				$moduleSpecs[$pathKey]['ownVerb'] = $ownVerb;
+				continue;
+			}
+
+			$operationSegments = $segments;
+			$operationSegment = array_pop($operationSegments);
+			$moduleSegments = array_values($operationSegments);
+			$operationName = $this->normalizeIdentifier((string)$operationSegment, 'operation');
+			$verbSpec = $this->createVerbSpec($moduleSegments, $operationName, $entry['operations']);
 
 			$verbSpecs[$verbSpec['fqcn']] = $verbSpec;
 
@@ -142,6 +168,29 @@ class Builder extends BaseBuilder implements BuilderInterface
 			'modules' => $moduleSpecs,
 			'verbs' => $verbSpecs,
 			'models' => $modelSpecs,
+		];
+	}
+
+	/**
+	 * @param string[]                   $moduleSegments
+	 * @param array<string, array<string, mixed>> $operations
+	 * @return array<string, mixed>
+	 */
+	private function createVerbSpec(array $moduleSegments, string $operationName, array $operations, bool $moduleOwn = false): array
+	{
+		$verbInfo = $moduleOwn
+			? $this->resolveModuleOwnVerbInfo($moduleSegments)
+			: $this->resolveVerbInfo($moduleSegments, $operationName);
+
+		return [
+			'namespace' => $verbInfo['namespace'],
+			'class' => $verbInfo['class'],
+			'fqcn' => $verbInfo['fqcn'],
+			'path' => $verbInfo['path'],
+			'property' => $moduleOwn ? '_own' : $operationName,
+			'methods' => $operations,
+			'invokeMethod' => $this->resolveInvokeMethod($operations),
+			'moduleOwn' => $moduleOwn,
 		];
 	}
 
@@ -259,7 +308,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 	private function describeParameter(array $parameter, array $models): array
 	{
 		$location = (string)($parameter['in'] ?? '');
-		if (!in_array($location, ['path', 'query'], true))
+		if (!in_array($location, ['path', 'query', 'header'], true))
 		{
 			throw new RuntimeException("Unsupported parameter location '{$location}'.");
 		}
@@ -267,7 +316,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$originalName = (string)($parameter['name'] ?? '');
 		$name = $this->normalizeIdentifier($originalName, 'param');
 		$required = (bool)($parameter['required'] ?? false);
-		$schema = isset($parameter['schema']) && is_array($parameter['schema']) ? $parameter['schema'] : [];
+		$schema = $this->extractParameterSchema($parameter);
 		$ignored = [];
 		$type = $this->describeInputSchema($schema, $models, $ignored);
 
@@ -278,6 +327,42 @@ class Builder extends BaseBuilder implements BuilderInterface
 			'required' => $required || $location === 'path',
 			'type' => $type,
 		];
+	}
+
+	/**
+	 * @param array<string, mixed> $parameter
+	 * @return array<string, mixed>
+	 */
+	private function extractParameterSchema(array $parameter): array
+	{
+		if (isset($parameter['schema']) && is_array($parameter['schema']))
+		{
+			return $parameter['schema'];
+		}
+
+		$schema = [];
+		foreach ([
+			'$ref',
+			'type',
+			'format',
+			'enum',
+			'items',
+			'anyOf',
+			'oneOf',
+			'allOf',
+			'nullable',
+			'default',
+			'additionalProperties',
+		] as $key)
+		{
+			if (!array_key_exists($key, $parameter))
+			{
+				continue;
+			}
+			$schema[$key] = $parameter[$key];
+		}
+
+		return $schema;
 	}
 
 	/**
@@ -420,6 +505,8 @@ class Builder extends BaseBuilder implements BuilderInterface
 				'mode' => 'mixed',
 			];
 		}
+
+		$schema = $this->normalizeSimpleCompositeSchema($schema);
 
 		if (isset($schema['$ref']))
 		{
@@ -573,6 +660,9 @@ class Builder extends BaseBuilder implements BuilderInterface
 	 */
 	private function describeInputSchema(array $schema, array $models, array &$usedModelNames): array
 	{
+		$schema = $this->normalizeSimpleCompositeSchema($schema);
+		$nullable = $this->schemaAllowsNull($schema);
+
 		if (isset($schema['$ref']))
 		{
 			$name = $this->schemaNameFromRef((string)$schema['$ref']);
@@ -582,25 +672,27 @@ class Builder extends BaseBuilder implements BuilderInterface
 				$usedModelNames[$name] = true;
 				$modelInfo = $this->resolveModelClassInfo($name);
 
-				return [
+				$type = [
 					'typeHint' => '\\' . $modelInfo['fqcn'],
 					'docType' => '\\' . $modelInfo['fqcn'],
 					'kind' => 'model',
 				];
+				return $this->applyInputNullability($type, $nullable);
 			}
 
-			return $this->describeInputSchema($model?->schema ?? [], $models, $usedModelNames);
+			$type = $this->describeInputSchema($model?->schema ?? [], $models, $usedModelNames);
+			return $this->applyInputNullability($type, $nullable);
 		}
 
 		foreach (['allOf', 'oneOf', 'anyOf'] as $compositeKey)
 		{
 			if (isset($schema[$compositeKey]) && is_array($schema[$compositeKey]))
 			{
-				return [
+				return $this->applyInputNullability([
 					'typeHint' => 'mixed',
 					'docType' => 'mixed',
 					'kind' => 'mixed',
-				];
+				], $nullable);
 			}
 		}
 
@@ -617,11 +709,11 @@ class Builder extends BaseBuilder implements BuilderInterface
 					$usedModelNames[$name] = true;
 					$modelInfo = $this->resolveModelClassInfo($name);
 
-					return [
+					return $this->applyInputNullability([
 						'typeHint' => 'array',
 						'docType' => 'list<\\' . $modelInfo['fqcn'] . '>',
 						'kind' => 'array',
-					];
+					], $nullable);
 				}
 			}
 
@@ -629,34 +721,34 @@ class Builder extends BaseBuilder implements BuilderInterface
 				? 'mixed'
 				: ($this->describeInputSchema($itemSchema, $models, $usedModelNames)['typeHint'] ?? 'mixed');
 
-			return [
+			return $this->applyInputNullability([
 				'typeHint' => 'array',
 				'docType' => 'list<' . $itemType . '>',
 				'kind' => 'array',
-			];
+			], $nullable);
 		}
 		if ($type === 'object')
 		{
-			return [
+			return $this->applyInputNullability([
 				'typeHint' => 'array',
 				'docType' => 'array<string, mixed>',
 				'kind' => 'array',
-			];
+			], $nullable);
 		}
 		if ($type === '')
 		{
-			return [
+			return $this->applyInputNullability([
 				'typeHint' => 'mixed',
 				'docType' => 'mixed',
 				'kind' => 'mixed',
-			];
+			], $nullable);
 		}
 
-		return [
+		return $this->applyInputNullability([
 			'typeHint' => $this->mapScalarType($type),
 			'docType' => $this->mapScalarType($type),
 			'kind' => 'scalar',
-		];
+		], $nullable);
 	}
 
 	/**
@@ -744,6 +836,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 		array &$queue
 	): array
 	{
+		$schema = $this->normalizeSimpleCompositeSchema($schema);
 		$name = $this->normalizeIdentifier($originalName, 'field');
 		$nullable = $this->schemaAllowsNull($schema);
 		$default = array_key_exists('default', $schema) ? $schema['default'] : null;
@@ -875,6 +968,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 
 	private function resolveModelPropertyType(array $schema): string
 	{
+		$schema = $this->normalizeSimpleCompositeSchema($schema);
 		$type = $this->primarySchemaType($schema);
 		if ($type === 'array' || $type === 'object')
 		{
@@ -965,14 +1059,22 @@ class Builder extends BaseBuilder implements BuilderInterface
 		{
 			$lines[] = "\tpublic \\" . $verb['fqcn'] . ' $' . $verb['property'] . ';';
 		}
+		if ($module['ownVerb'] !== null)
+		{
+			$lines[] = "\tprivate \\" . $module['ownVerb']['fqcn'] . ' $_own;';
+		}
 
-		if ($module['modules'] !== [] || $module['verbs'] !== [])
+		if ($module['modules'] !== [] || $module['verbs'] !== [] || $module['ownVerb'] !== null)
 		{
 			$lines[] = '';
 		}
 
 		$lines[] = "\tpublic function __construct(private \\" . $this->config->output->namespace . '\\' . $this->config->output->class . ' $client)';
 		$lines[] = "\t{";
+		if ($module['ownVerb'] !== null)
+		{
+			$lines[] = "\t\t\$this->_own = new \\" . $module['ownVerb']['fqcn'] . '($client);';
+		}
 		foreach ($module['modules'] as $childModule)
 		{
 			$lines[] = "\t\t\$this->{$childModule['property']} = new \\" . $childModule['fqcn'] . '($client);';
@@ -982,6 +1084,17 @@ class Builder extends BaseBuilder implements BuilderInterface
 			$lines[] = "\t\t\$this->{$verb['property']} = new \\" . $verb['fqcn'] . '($client);';
 		}
 		$lines[] = "\t}";
+
+		if ($module['ownVerb'] !== null)
+		{
+			$methodKeys = array_keys($module['ownVerb']['methods']);
+			foreach ($methodKeys as $methodName)
+			{
+				$lines[] = '';
+				$lines = array_merge($lines, $this->renderDelegatingMethod($module['ownVerb']['methods'][$methodName]));
+			}
+		}
+
 		$lines[] = '}';
 		$lines[] = '';
 
@@ -1039,48 +1152,45 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$parameters = $method['parameters'];
 		$body = $method['body'];
 		$return = $method['return'];
-		$signatureParts = [];
-		$docLines = [];
 		$paramsBuild = [];
+		$headersBuild = [];
+		[$signatureParts, $docLines, $argumentNames] = $this->describeMethodArguments($parameters, $body, $return);
 
 		foreach ($parameters as $parameter)
 		{
-			$type = $parameter['type'];
-			$signatureParts[] = $this->renderArgument($parameter['name'], $type['typeHint'], (bool)$parameter['required']);
-			if ($type['docType'] !== null && $type['docType'] !== $type['typeHint'])
-			{
-				$docLines[] = "\t * @param {$type['docType']} \${$parameter['name']}";
-			}
-
+			$targetName = $parameter['location'] === 'header' ? 'headers' : 'params';
 			if ($parameter['required'])
 			{
-				$paramsBuild[] = "\t\t\$params['{$parameter['originalName']}'] = \${$parameter['name']};";
+				if ($parameter['location'] === 'header')
+				{
+					$headersBuild[] = "\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+				}
+				else
+				{
+					$paramsBuild[] = "\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+				}
 			}
 			else
 			{
-				$paramsBuild[] = "\t\tif (\${$parameter['name']} !== null)";
-				$paramsBuild[] = "\t\t{";
-				$paramsBuild[] = "\t\t\t\$params['{$parameter['originalName']}'] = \${$parameter['name']};";
-				$paramsBuild[] = "\t\t}";
+				if ($parameter['location'] === 'header')
+				{
+					$headersBuild[] = "\t\tif (\${$parameter['name']} !== null)";
+					$headersBuild[] = "\t\t{";
+					$headersBuild[] = "\t\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+					$headersBuild[] = "\t\t}";
+				}
+				else
+				{
+					$paramsBuild[] = "\t\tif (\${$parameter['name']} !== null)";
+					$paramsBuild[] = "\t\t{";
+					$paramsBuild[] = "\t\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+					$paramsBuild[] = "\t\t}";
+				}
 			}
-		}
-
-		if ($body !== null)
-		{
-			$signatureParts[] = $this->renderArgument($body['name'], $body['type']['typeHint'], (bool)$body['required']);
-			if ($body['type']['docType'] !== null && $body['type']['docType'] !== $body['type']['typeHint'])
-			{
-				$docLines[] = "\t * @param {$body['type']['docType']} \${$body['name']}";
-			}
-		}
-
-		if ($return['docType'] !== null && ($return['phpType'] === 'array' || $return['phpType'] === 'mixed'))
-		{
-			$docLines[] = "\t * @return {$return['docType']}";
 		}
 
 		$methodName = $invoke ? '__invoke' : $method['name'];
-		$returnType = $invoke ? $return['phpType'] : $return['phpType'];
+		$returnType = $return['phpType'];
 		$lines = [];
 
 		if ($docLines !== [])
@@ -1097,27 +1207,24 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$lines[] = "\t{";
 		if ($invoke)
 		{
-			$arguments = array_map(
-				static fn(array $parameter): string => '$' . $parameter['name'],
-				$parameters
-			);
-			if ($body !== null)
-			{
-				$arguments[] = '$' . $body['name'];
-			}
-			$lines[] = "\t\treturn \$this->get(" . implode(', ', $arguments) . ');';
+			$lines[] = "\t\treturn \$this->get(" . implode(', ', $argumentNames) . ');';
 			$lines[] = "\t}";
 			return $lines;
 		}
 
 		$lines[] = "\t\t\$params = [];";
+		$lines[] = "\t\t\$headers = [];";
 		foreach ($paramsBuild as $paramsLine)
 		{
 			$lines[] = $paramsLine;
 		}
+		foreach ($headersBuild as $headerLine)
+		{
+			$lines[] = $headerLine;
+		}
 
 		$bodyArgument = $body === null ? '[]' : '$' . $body['name'];
-		$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument})";
+		$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument}, \$headers)";
 
 		switch ($return['mode'])
 		{
@@ -1149,6 +1256,98 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$lines[] = "\t}";
 
 		return $lines;
+	}
+
+	/**
+	 * @param array<string, mixed> $method
+	 * @return string[]
+	 */
+	private function renderDelegatingMethod(array $method): array
+	{
+		[$signatureParts, $docLines, $argumentNames] = $this->describeMethodArguments(
+			$method['parameters'],
+			$method['body'],
+			$method['return']
+		);
+
+		$lines = [];
+		if ($docLines !== [])
+		{
+			$lines[] = "\t/**";
+			foreach ($docLines as $docLine)
+			{
+				$lines[] = $docLine;
+			}
+			$lines[] = "\t */";
+		}
+
+		$lines[] = "\tpublic function {$method['name']}(" . implode(', ', $signatureParts) . '): ' . $method['return']['phpType'];
+		$lines[] = "\t{";
+		$lines[] = "\t\treturn \$this->_own->{$method['name']}(" . implode(', ', $argumentNames) . ');';
+		$lines[] = "\t}";
+
+		return $lines;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $parameters
+	 * @return array{0: string[], 1: string[], 2: string[]}
+	 */
+	private function describeMethodArguments(array $parameters, ?array $body, array $return): array
+	{
+		$arguments = [];
+		$order = 0;
+
+		foreach ($parameters as $parameter)
+		{
+			$arguments[] = [
+				'name' => $parameter['name'],
+				'required' => (bool)$parameter['required'],
+				'type' => $parameter['type'],
+				'order' => $order++,
+			];
+		}
+		if ($body !== null)
+		{
+			$arguments[] = [
+				'name' => $body['name'],
+				'required' => (bool)$body['required'],
+				'type' => $body['type'],
+				'order' => $order++,
+			];
+		}
+
+		usort($arguments, static function (array $left, array $right): int {
+			$requiredCompare = ((int)$right['required']) <=> ((int)$left['required']);
+			if ($requiredCompare !== 0)
+			{
+				return $requiredCompare;
+			}
+
+			return $left['order'] <=> $right['order'];
+		});
+
+		$signatureParts = [];
+		$docLines = [];
+		$argumentNames = [];
+
+		foreach ($arguments as $argument)
+		{
+			$type = $argument['type'];
+			$signatureParts[] = $this->renderArgument($argument['name'], $type['typeHint'], (bool)$argument['required']);
+			$argumentNames[] = '$' . $argument['name'];
+			if ($type['docType'] !== null && $type['docType'] !== $type['typeHint'])
+			{
+				$docLines[] = "\t * @param {$type['docType']} \${$argument['name']}";
+			}
+		}
+
+		if ($return['docType'] !== null && ($return['phpType'] === 'array' || $return['phpType'] === 'mixed'))
+		{
+			$docLines[] = "\t * @return {$return['docType']}";
+		}
+
+		return [$signatureParts, $docLines, $argumentNames];
 	}
 
 	/**
@@ -1281,6 +1480,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 					'property' => $this->normalizeIdentifier($segment, 'module'),
 					'modules' => [],
 					'verbs' => [],
+					'ownVerb' => null,
 				];
 			}
 
@@ -1460,6 +1660,35 @@ class Builder extends BaseBuilder implements BuilderInterface
 	}
 
 	/**
+	 * @param string[] $moduleSegments
+	 * @return array{namespace: string, class: string, fqcn: string, path: string}
+	 */
+	private function resolveModuleOwnVerbInfo(array $moduleSegments): array
+	{
+		$classSegment = (string)end($moduleSegments);
+		$class = $this->normalizeClassName($classSegment, 'Module') . 'Verb';
+		$namespace = $this->config->output->namespace . '\\ModuleVerbs';
+		$relative = ['ModuleVerbs'];
+
+		$parentSegments = $moduleSegments;
+		array_pop($parentSegments);
+		foreach ($parentSegments as $segment)
+		{
+			$classSegment = $this->normalizeClassName($segment, 'Module');
+			$namespace .= '\\' . $classSegment;
+			$relative[] = $classSegment;
+		}
+
+		return [
+			'namespace' => $namespace,
+			'class' => $class,
+			'fqcn' => $namespace . '\\' . $class,
+			'path' => $this->config->output->path . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $relative)
+				. DIRECTORY_SEPARATOR . $class . '.php',
+		];
+	}
+
+	/**
 	 * @return array{namespace: string, class: string, fqcn: string, path: string}
 	 */
 	private function resolveModelClassInfo(string $schemaName): array
@@ -1504,7 +1733,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 
 	private function shouldGenerateModel(Model $model): bool
 	{
-		return $this->primarySchemaType($model->schema) === 'object' && $model->properties !== [];
+		return $this->primarySchemaType($this->normalizeSimpleCompositeSchema($model->schema)) === 'object' && $model->properties !== [];
 	}
 
 	/**
@@ -1541,7 +1770,127 @@ class Builder extends BaseBuilder implements BuilderInterface
 		}
 
 		$type = $schema['type'] ?? null;
-		return is_array($type) && in_array('null', $type, true);
+		if (is_array($type) && in_array('null', $type, true))
+		{
+			return true;
+		}
+
+		foreach (['anyOf', 'oneOf'] as $key)
+		{
+			if (!isset($schema[$key]) || !is_array($schema[$key]))
+			{
+				continue;
+			}
+			foreach ($schema[$key] as $entry)
+			{
+				if (is_array($entry) && $this->schemaRepresentsNull($entry))
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param array<string, mixed> $type
+	 * @return array<string, mixed>
+	 */
+	private function applyInputNullability(array $type, bool $nullable): array
+	{
+		if (!$nullable)
+		{
+			return $type;
+		}
+		if (($type['typeHint'] ?? 'mixed') !== 'mixed' && !str_starts_with((string)$type['typeHint'], '?'))
+		{
+			$type['typeHint'] = '?' . $type['typeHint'];
+		}
+		if (($type['docType'] ?? null) !== null && $type['docType'] !== 'mixed' && !str_contains((string)$type['docType'], 'null'))
+		{
+			$type['docType'] .= '|null';
+		}
+
+		return $type;
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 * @return array<string, mixed>
+	 */
+	private function normalizeSimpleCompositeSchema(array $schema): array
+	{
+		foreach (['anyOf', 'oneOf'] as $key)
+		{
+			if (!isset($schema[$key]) || !is_array($schema[$key]))
+			{
+				continue;
+			}
+
+			$nullable = $this->schemaAllowsNull($schema);
+			$variants = [];
+			foreach ($schema[$key] as $entry)
+			{
+				if (!is_array($entry))
+				{
+					continue;
+				}
+				if ($this->schemaRepresentsNull($entry))
+				{
+					$nullable = true;
+					continue;
+				}
+				$variants[] = $entry;
+			}
+
+			if (count($variants) !== 1)
+			{
+				return $schema;
+			}
+
+			$metadata = $schema;
+			unset($metadata[$key]);
+			$resolved = array_replace_recursive($variants[0], $metadata);
+			if ($nullable)
+			{
+				$resolved['nullable'] = true;
+			}
+
+			return $resolved;
+		}
+
+		if (isset($schema['allOf']) && is_array($schema['allOf']))
+		{
+			$variants = array_values(array_filter($schema['allOf'], 'is_array'));
+			if (count($variants) === 1)
+			{
+				$metadata = $schema;
+				unset($metadata['allOf']);
+				return array_replace_recursive($variants[0], $metadata);
+			}
+		}
+
+		return $schema;
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 */
+	private function schemaRepresentsNull(array $schema): bool
+	{
+		$type = $schema['type'] ?? null;
+		if ($type === 'null')
+		{
+			return true;
+		}
+		if (is_array($type))
+		{
+			$withoutNull = array_values(array_filter($type, static fn(mixed $entry): bool => $entry !== 'null'));
+			return $withoutNull === [] && in_array('null', $type, true);
+		}
+
+		return false;
 	}
 
 	private function mapScalarType(string $type): string

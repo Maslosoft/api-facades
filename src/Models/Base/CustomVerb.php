@@ -14,9 +14,9 @@ class CustomVerb
 		$this->client = $client;
 	}
 
-	protected function requestData(string $path, string $method, array $params = [], mixed $body = []): mixed
+	protected function requestData(string $path, string $method, array $params = [], mixed $body = [], array $headers = []): mixed
 	{
-		return $this->client->getData($path, $method, $params, $body);
+		return $this->client->getData($path, $method, $params, $body, $headers);
 	}
 
 	protected function expectArrayResponse(mixed $data, string $path, string $method): array
