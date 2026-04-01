@@ -21,4 +21,22 @@ Also, because only relevant verbs and modules exist, the non-existing endpoints 
 be type hinted.
 
 OpenAPI spec used: `./openapi.01.json`
-API Facades config used: `./api-facades.01.php`
+API Facades config used: `./api-facades.01.yml`
+
+If any the models have some kind of namespace, for example dot separated names,
+like `crm.User`, the namespace should be also used in model generator, and
+resuling in combined base namespace from yml config and partial model namespace:
+
+Example:
+
+OpenApi namespace:
+
+`crm.User`
+
+The namespace in yml config:
+
+`Examples\Expected01`
+
+Resulting namespace:
+
+`Examples\Expected01\Models\Crm\User`
