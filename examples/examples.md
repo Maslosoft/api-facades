@@ -23,7 +23,7 @@ be type hinted.
 OpenAPI spec used: `./openapi.01.json`
 API Facades config used: `./api-facades.01.yml`
 
-If any the models have some kind of namespace, for example dot separated names,
+If any the models have some kind of namespace, for example dot or underscore separated names,
 like `crm.User`, the namespace should be also used in model generator, and
 resuling in combined base namespace from yml config and partial model namespace:
 
