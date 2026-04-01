@@ -4,6 +4,8 @@ namespace Maslosoft\ApiFacades\Base;
 
 use Maslosoft\ApiFacades\Exceptions\BadParamsException;
 use Maslosoft\ApiFacades\Interfaces\Hydrator;
+use BackedEnum;
+use JsonException;
 use RuntimeException;
 
 abstract class GenericClient
@@ -48,9 +50,9 @@ abstract class GenericClient
 	 * @param string $method Method as per HTTP specification, e.g. 'get', 'post', 'put', 'delete'
 	 * @param array $params Array key-values matching parameter names in endpoint URL.
 	 * @param mixed $body Arbitrary data to be sent as request body, the only requirement is that it can be converted to JSON.
-	 * @return array
+	 * @return mixed
 	 */
-	public function getData(string $endpoint, string $method, array $params = [], mixed $body = []): array
+	public function getData(string $endpoint, string $method, array $params = [], mixed $body = []): mixed
 	{
 		$method = strtoupper($method);
 		$endpoint = $this->applyParamsToEndpoint($endpoint, $params);
@@ -72,10 +74,13 @@ abstract class GenericClient
 		$payload = null;
 		if ($body !== [] && $body !== null)
 		{
-			$payload = json_encode($body);
-			if ($payload === false)
+			try
 			{
-				throw new BadParamsException('Request body could not be encoded as JSON.');
+				$payload = json_encode($this->normalizeBody($body), JSON_THROW_ON_ERROR);
+			}
+			catch (JsonException $exception)
+			{
+				throw new BadParamsException('Request body could not be encoded as JSON.', 0, $exception);
 			}
 			$headers[] = 'Content-Type: application/json';
 		}
@@ -86,13 +91,14 @@ abstract class GenericClient
 			return [];
 		}
 
-		$decoded = json_decode($response, true);
-		if (!is_array($decoded))
+		try
 		{
-			return [];
+			return json_decode($response, true, 512, JSON_THROW_ON_ERROR);
 		}
-
-		return $decoded;
+		catch (JsonException)
+		{
+			return $response;
+		}
 	}
 
 	private function applyParamsToEndpoint(string $endpoint, array &$params): string
@@ -147,5 +153,36 @@ abstract class GenericClient
 		}
 
 		return $response;
+	}
+
+	private function normalizeBody(mixed $value): mixed
+	{
+		if ($value instanceof BackedEnum)
+		{
+			return $value->value;
+		}
+
+		if (is_array($value))
+		{
+			foreach ($value as $key => $item)
+			{
+				$value[$key] = $this->normalizeBody($item);
+			}
+
+			return $value;
+		}
+
+		if (is_object($value))
+		{
+			$result = [];
+			foreach (get_object_vars($value) as $key => $item)
+			{
+				$result[$key] = $this->normalizeBody($item);
+			}
+
+			return $result;
+		}
+
+		return $value;
 	}
 }

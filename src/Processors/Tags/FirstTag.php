@@ -12,6 +12,10 @@ class FirstTag implements Processor, TagsAware
 
 	public function process($value)
 	{
+		if (is_string($value) && trim($value) !== '')
+		{
+			return $value;
+		}
 		if(empty($this->tags))
 		{
 			return '';

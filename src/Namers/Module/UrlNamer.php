@@ -18,6 +18,19 @@ class UrlNamer implements ModuleNamer, PathAware, TagsAware
 	 * @var Processor[]
 	 */
 	public array $processors = [];
+
+	/**
+	 * @param string $path
+	 * @param string[] $tags
+	 * @param Processor[] $processors
+	 */
+	public function __construct(string $path = '', array $tags = [], array $processors = [])
+	{
+		$this->path = $path;
+		$this->tags = $tags;
+		$this->processors = $processors;
+	}
+
 	public function getName(): string
 	{
 		$path = $this->path;
@@ -27,14 +40,18 @@ class UrlNamer implements ModuleNamer, PathAware, TagsAware
 			{
 				$processor->setTags($this->tags);
 			}
-			$path = $processor->process($path);
-			if(empty($path))
+			$processed = $processor->process($path);
+			if($processed === null)
 			{
 				continue;
 			}
-			return $path;
+			$path = (string)$processed;
+			if($path === '')
+			{
+				continue;
+			}
 		}
-		return '';
+		return $path;
 	}
 
 }
