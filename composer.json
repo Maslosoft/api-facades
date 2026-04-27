@@ -31,6 +31,7 @@
         }
     ],
     "require": {
+        "guzzlehttp/guzzle": "^7",
         "php": ">=8.3",
         "maslosoft/cli-shared": "*",
         "maslosoft/embedi": "^2|^3|^4",

@@ -2,11 +2,21 @@
 
 namespace Maslosoft\ApiFacades\Base;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use Maslosoft\ApiFacades\Exceptions\BadParamsException;
+use Maslosoft\ApiFacades\Exceptions\Http\ClientException;
+use Maslosoft\ApiFacades\Exceptions\Http\ForbiddenException;
+use Maslosoft\ApiFacades\Exceptions\Http\HttpException;
+use Maslosoft\ApiFacades\Exceptions\Http\ServerException;
+use Maslosoft\ApiFacades\Exceptions\Http\TransportException;
+use Maslosoft\ApiFacades\Exceptions\Http\UnauthorizedException;
 use Maslosoft\ApiFacades\Interfaces\Hydrator;
+use Psr\Http\Message\ResponseInterface;
 use BackedEnum;
 use JsonException;
-use RuntimeException;
 
 abstract class GenericClient
 {
@@ -16,6 +26,8 @@ abstract class GenericClient
 	 * @var Hydrator
 	 */
 	private /*final*/ Hydrator $_hydrator;
+
+	private ?ClientInterface $httpClient = null;
 
 	/**
 	 * Example base URL: https://api.example.com
@@ -31,6 +43,12 @@ abstract class GenericClient
 	public function setHydrator(Hydrator $_hydrator): static
 	{
 		$this->_hydrator = $_hydrator;
+		return $this;
+	}
+
+	public function setHttpClient(ClientInterface $httpClient): static
+	{
+		$this->httpClient = $httpClient;
 		return $this;
 	}
 
@@ -71,7 +89,7 @@ abstract class GenericClient
 			}
 		}
 
-		$requestHeaders = ['Accept: application/json'];
+		$requestHeaders['Accept'] = 'application/json';
 		$payload = null;
 		if ($body !== [] && $body !== null)
 		{
@@ -83,14 +101,14 @@ abstract class GenericClient
 			{
 				throw new BadParamsException('Request body could not be encoded as JSON.', 0, $exception);
 			}
-			$requestHeaders[] = 'Content-Type: application/json';
+			$requestHeaders['Content-Type'] = 'application/json';
 		}
 
 		$headers = array_merge($this->getHeaders(), $headers);
 
-		foreach ($this->normalizeHeaders($headers) as $header)
+		foreach ($this->normalizeHeaders($headers) as $name => $header)
 		{
-			$requestHeaders[] = $header;
+			$requestHeaders[$name] = $header;
 		}
 
 		$response = $this->request($url, $method, $requestHeaders, $payload);
@@ -140,27 +158,51 @@ abstract class GenericClient
 
 	protected function request(string $url, string $method, array $headers, ?string $body): string
 	{
-		$options = [
-			'http' => [
-				'method' => strtoupper($method),
-				'header' => implode("\r\n", $headers),
-				'ignore_errors' => true,
-			],
-		];
-
-		if ($body !== null)
+		try
 		{
-			$options['http']['content'] = $body;
+			$options = [
+				'headers' => $headers,
+				'http_errors' => false,
+			];
+
+			if ($body !== null)
+			{
+				$options['body'] = $body;
+			}
+
+			$response = $this->getHttpClient()->request(strtoupper($method), $url, $options);
+		}
+		catch (GuzzleRequestException $exception)
+		{
+			$response = $exception->getResponse();
+			if ($response !== null)
+			{
+				throw $this->createHttpException($response, $method, $url, $exception);
+			}
+
+			throw new TransportException(
+				$this->formatTransportMessage($method, $url, $exception->getMessage()),
+				strtoupper($method),
+				$url,
+				$exception
+			);
+		}
+		catch (GuzzleException $exception)
+		{
+			throw new TransportException(
+				$this->formatTransportMessage($method, $url, $exception->getMessage()),
+				strtoupper($method),
+				$url,
+				$exception
+			);
 		}
 
-		$context = stream_context_create($options);
-		$response = file_get_contents($url, false, $context);
-		if ($response === false)
+		if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300)
 		{
-			throw new RuntimeException("Unable to fetch '{$url}'.");
+			throw $this->createHttpException($response, $method, $url);
 		}
 
-		return $response;
+		return (string)$response->getBody();
 	}
 
 	/**
@@ -170,6 +212,11 @@ abstract class GenericClient
 	protected function getHeaders(): array
 	{
 		return [];
+	}
+
+	protected function getHttpClient(): ClientInterface
+	{
+		return $this->httpClient ??= new Client();
 	}
 
 	private function normalizeBody(mixed $value): mixed
@@ -227,9 +274,179 @@ abstract class GenericClient
 				throw new BadParamsException("Header `{$name}` must be a scalar value.");
 			}
 
-			$result[] = $name . ': ' . (string)$value;
+			$result[$name] = (string)$value;
 		}
 
 		return $result;
+	}
+
+	/**
+	 * @param string[] $headers
+	 * @return array<string, string|list<string>>
+	 */
+	private function headerLinesToMap(array $headers): array
+	{
+		$result = [];
+
+		foreach ($headers as $header)
+		{
+			$header = trim((string)$header);
+			if ($header === '')
+			{
+				continue;
+			}
+
+			$parts = explode(':', $header, 2);
+			if (count($parts) !== 2)
+			{
+				continue;
+			}
+
+			$name = trim($parts[0]);
+			$value = ltrim($parts[1]);
+			if ($name === '')
+			{
+				continue;
+			}
+
+			if (!isset($result[$name]))
+			{
+				$result[$name] = $value;
+				continue;
+			}
+
+			$current = $result[$name];
+			if (is_array($current))
+			{
+				$current[] = $value;
+				$result[$name] = $current;
+				continue;
+			}
+
+			$result[$name] = [$current, $value];
+		}
+
+		return $result;
+	}
+
+	private function formatTransportMessage(string $method, string $url, string $message): string
+	{
+		$prefix = strtoupper($method) . " {$url} failed";
+		$message = trim($message);
+
+		return $message === '' ? $prefix . '.' : $prefix . ': ' . $message;
+	}
+
+	private function createHttpException(
+		ResponseInterface $response,
+		string $method,
+		string $url,
+		?\Throwable $previous = null
+	): HttpException
+	{
+		$statusCode = $response->getStatusCode();
+		$reasonPhrase = $response->getReasonPhrase();
+		$responseBody = (string)$response->getBody();
+		$message = $this->formatHttpMessage($method, $url, $statusCode, $reasonPhrase, $responseBody);
+		$method = strtoupper($method);
+		$headers = $response->getHeaders();
+
+		return match (true)
+		{
+			$statusCode === 401 => new UnauthorizedException(
+				$message,
+				$statusCode,
+				$method,
+				$url,
+				$headers,
+				$responseBody,
+				$reasonPhrase,
+				$previous
+			),
+			$statusCode === 403 => new ForbiddenException(
+				$message,
+				$statusCode,
+				$method,
+				$url,
+				$headers,
+				$responseBody,
+				$reasonPhrase,
+				$previous
+			),
+			$statusCode >= 400 && $statusCode < 500 => new ClientException(
+				$message,
+				$statusCode,
+				$method,
+				$url,
+				$headers,
+				$responseBody,
+				$reasonPhrase,
+				$previous
+			),
+			$statusCode >= 500 => new ServerException(
+				$message,
+				$statusCode,
+				$method,
+				$url,
+				$headers,
+				$responseBody,
+				$reasonPhrase,
+				$previous
+			),
+			default => new HttpException(
+				$message,
+				$statusCode,
+				$method,
+				$url,
+				$headers,
+				$responseBody,
+				$reasonPhrase,
+				$previous
+			),
+		};
+	}
+
+	private function formatHttpMessage(
+		string $method,
+		string $url,
+		int $statusCode,
+		string $reasonPhrase,
+		string $responseBody
+	): string
+	{
+		$message = strtoupper($method) . " {$url} returned HTTP {$statusCode}";
+		if ($reasonPhrase !== '')
+		{
+			$message .= " {$reasonPhrase}";
+		}
+
+		$bodyPreview = $this->summarizeBody($responseBody);
+		if ($bodyPreview !== '')
+		{
+			$message .= ': ' . $bodyPreview;
+		}
+		else
+		{
+			$message .= '.';
+		}
+
+		return $message;
+	}
+
+	private function summarizeBody(string $responseBody): string
+	{
+		$body = trim($responseBody);
+		if ($body === '')
+		{
+			return '';
+		}
+
+		$body = preg_replace('/\s+/', ' ', $body) ?? $body;
+		if (strlen($body) > 240)
+		{
+			return substr($body, 0, 237) . '...';
+		}
+
+		return $body;
 	}
 }
