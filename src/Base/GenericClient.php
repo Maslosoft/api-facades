@@ -86,6 +86,8 @@ abstract class GenericClient
 			$requestHeaders[] = 'Content-Type: application/json';
 		}
 
+		$headers = array_merge($this->getHeaders(), $headers);
+
 		foreach ($this->normalizeHeaders($headers) as $header)
 		{
 			$requestHeaders[] = $header;
@@ -159,6 +161,15 @@ abstract class GenericClient
 		}
 
 		return $response;
+	}
+
+	/**
+	 * @override Override this method to provide custom headers.
+	 * @return array
+	 */
+	protected function getHeaders(): array
+	{
+		return [];
 	}
 
 	private function normalizeBody(mixed $value): mixed
