@@ -1,3 +1,5 @@
+input:
+  location: openapi.03.json
 output:
   # Adjust to requirements
   namespace: Acme\Test03

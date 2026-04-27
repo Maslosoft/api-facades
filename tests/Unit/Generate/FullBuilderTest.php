@@ -23,5 +23,13 @@ class FullBuilderTest extends Unit
 
 		$builder = new Builder(Config::load($configPath));
 		$builder->build();
+
+		$client = new \Acme\Test03\Client03();
+
+		// TODO: Should allow param-less and request /api/invoices/
+		$client->invoices->get();
+
+		// TODO: Missing verb
+		$client->invoices->delete($invoiceId);
 	}
 }
