@@ -123,8 +123,12 @@ class Builder extends BaseBuilder implements BuilderInterface
 					$entry['operations'],
 					true
 				);
-				$verbSpecs[$ownVerb['fqcn']] = $ownVerb;
+				if ($moduleSpecs[$pathKey]['ownVerb'] !== null)
+				{
+					$ownVerb = $this->mergeModuleOwnVerbSpec($moduleSpecs[$pathKey]['ownVerb'], $ownVerb);
+				}
 				$moduleSpecs[$pathKey]['ownVerb'] = $ownVerb;
+				$verbSpecs[$ownVerb['fqcn']] = $ownVerb;
 				continue;
 			}
 
@@ -181,6 +185,9 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$verbInfo = $moduleOwn
 			? $this->resolveModuleOwnVerbInfo($moduleSegments)
 			: $this->resolveVerbInfo($moduleSegments, $operationName);
+		$methods = $moduleOwn
+			? $this->groupModuleOwnMethods($operations)
+			: $operations;
 
 		return [
 			'namespace' => $verbInfo['namespace'],
@@ -188,8 +195,10 @@ class Builder extends BaseBuilder implements BuilderInterface
 			'fqcn' => $verbInfo['fqcn'],
 			'path' => $verbInfo['path'],
 			'property' => $moduleOwn ? '_own' : $operationName,
-			'methods' => $operations,
-			'invokeMethod' => $this->resolveInvokeMethod($operations),
+			'methods' => $methods,
+			'invokeMethod' => $moduleOwn
+				? $this->resolveModuleOwnInvokeMethod($methods)
+				: $this->resolveInvokeMethod($operations),
 			'moduleOwn' => $moduleOwn,
 		];
 	}
@@ -1091,7 +1100,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 			foreach ($methodKeys as $methodName)
 			{
 				$lines[] = '';
-				$lines = array_merge($lines, $this->renderDelegatingMethod($module['ownVerb']['methods'][$methodName]));
+				$lines = array_merge($lines, $this->renderDelegatingMethodGroup($module['ownVerb']['methods'][$methodName]));
 			}
 		}
 
@@ -1123,14 +1132,24 @@ class Builder extends BaseBuilder implements BuilderInterface
 
 		if ($verb['invokeMethod'] !== null)
 		{
-			$lines = array_merge($lines, $this->renderVerbMethod($verb['invokeMethod'], true));
+			$lines = array_merge(
+				$lines,
+				$verb['moduleOwn']
+					? $this->renderVerbMethodGroup($verb['invokeMethod'], true)
+					: $this->renderVerbMethod($verb['invokeMethod'], true)
+			);
 			$lines[] = '';
 		}
 
 		$methodKeys = array_keys($verb['methods']);
 		foreach ($methodKeys as $index => $methodName)
 		{
-			$lines = array_merge($lines, $this->renderVerbMethod($verb['methods'][$methodName]));
+			$lines = array_merge(
+				$lines,
+				$verb['moduleOwn']
+					? $this->renderVerbMethodGroup($verb['methods'][$methodName])
+					: $this->renderVerbMethod($verb['methods'][$methodName])
+			);
 			if ($index !== array_key_last($methodKeys))
 			{
 				$lines[] = '';
@@ -1152,42 +1171,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 		$parameters = $method['parameters'];
 		$body = $method['body'];
 		$return = $method['return'];
-		$paramsBuild = [];
-		$headersBuild = [];
 		[$signatureParts, $docLines, $argumentNames] = $this->describeMethodArguments($parameters, $body, $return);
-
-		foreach ($parameters as $parameter)
-		{
-			$targetName = $parameter['location'] === 'header' ? 'headers' : 'params';
-			if ($parameter['required'])
-			{
-				if ($parameter['location'] === 'header')
-				{
-					$headersBuild[] = "\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
-				}
-				else
-				{
-					$paramsBuild[] = "\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
-				}
-			}
-			else
-			{
-				if ($parameter['location'] === 'header')
-				{
-					$headersBuild[] = "\t\tif (\${$parameter['name']} !== null)";
-					$headersBuild[] = "\t\t{";
-					$headersBuild[] = "\t\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
-					$headersBuild[] = "\t\t}";
-				}
-				else
-				{
-					$paramsBuild[] = "\t\tif (\${$parameter['name']} !== null)";
-					$paramsBuild[] = "\t\t{";
-					$paramsBuild[] = "\t\t\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
-					$paramsBuild[] = "\t\t}";
-				}
-			}
-		}
 
 		$methodName = $invoke ? '__invoke' : $method['name'];
 		$returnType = $return['phpType'];
@@ -1212,46 +1196,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 			return $lines;
 		}
 
-		$lines[] = "\t\t\$params = [];";
-		$lines[] = "\t\t\$headers = [];";
-		foreach ($paramsBuild as $paramsLine)
-		{
-			$lines[] = $paramsLine;
-		}
-		foreach ($headersBuild as $headerLine)
-		{
-			$lines[] = $headerLine;
-		}
-
-		$bodyArgument = $body === null ? '[]' : '$' . $body['name'];
-		$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument}, \$headers)";
-
-		switch ($return['mode'])
-		{
-			case 'model':
-				$lines[] = "\t\t\$data = \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
-				$lines[] = "\t\treturn \$this->client->getHydrator()->hydrate(new {$return['modelFqcn']}(), \$data);";
-				break;
-
-			case 'modelList':
-				$lines[] = "\t\t\$data = \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
-				$lines[] = "\t\treturn Items::hydrate(\$this->client->getHydrator(), {$return['modelFqcn']}::class, \$data);";
-				break;
-
-			case 'rawArray':
-				$lines[] = "\t\treturn \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
-				break;
-
-			case 'scalar':
-				$lines[] = "\t\t\$data = {$requestCall};";
-				$lines = array_merge($lines, $this->renderScalarGuard($return, $method['path'], $method['name']));
-				$lines[] = "\t\treturn \$data;";
-				break;
-
-			default:
-				$lines[] = "\t\treturn {$requestCall};";
-				break;
-		}
+		$lines = array_merge($lines, $this->indentLines($this->renderVerbMethodExecution($method), 2));
 
 		$lines[] = "\t}";
 
@@ -1259,16 +1204,16 @@ class Builder extends BaseBuilder implements BuilderInterface
 	}
 
 	/**
-	 * @param array<string, mixed> $method
+	 * @param array<string, mixed> $methodGroup
 	 * @return string[]
 	 */
-	private function renderDelegatingMethod(array $method): array
+	private function renderDelegatingMethodGroup(array $methodGroup): array
 	{
-		[$signatureParts, $docLines, $argumentNames] = $this->describeMethodArguments(
-			$method['parameters'],
-			$method['body'],
-			$method['return']
-		);
+		$descriptor = $this->describeMethodGroup($methodGroup);
+		$signatureParts = $descriptor['signatureParts'];
+		$docLines = $descriptor['docLines'];
+		$argumentNames = $descriptor['argumentNames'];
+		$return = $descriptor['return'];
 
 		$lines = [];
 		if ($docLines !== [])
@@ -1281,9 +1226,60 @@ class Builder extends BaseBuilder implements BuilderInterface
 			$lines[] = "\t */";
 		}
 
-		$lines[] = "\tpublic function {$method['name']}(" . implode(', ', $signatureParts) . '): ' . $method['return']['phpType'];
+		$lines[] = "\tpublic function {$methodGroup['name']}(" . implode(', ', $signatureParts) . '): ' . $return['phpType'];
 		$lines[] = "\t{";
-		$lines[] = "\t\treturn \$this->_own->{$method['name']}(" . implode(', ', $argumentNames) . ');';
+		$lines[] = "\t\treturn \$this->_own->{$methodGroup['name']}(" . implode(', ', $argumentNames) . ');';
+		$lines[] = "\t}";
+
+		return $lines;
+	}
+
+	/**
+	 * @param array<string, mixed> $methodGroup
+	 * @return string[]
+	 */
+	private function renderVerbMethodGroup(array $methodGroup, bool $invoke = false): array
+	{
+		$descriptor = $this->describeMethodGroup($methodGroup);
+		$signatureParts = $descriptor['signatureParts'];
+		$docLines = $descriptor['docLines'];
+		$argumentNames = $descriptor['argumentNames'];
+		$return = $descriptor['return'];
+
+		$methodName = $invoke ? '__invoke' : $methodGroup['name'];
+		$lines = [];
+
+		if ($docLines !== [])
+		{
+			$lines[] = "\t/**";
+			foreach ($docLines as $docLine)
+			{
+				$lines[] = $docLine;
+			}
+			$lines[] = "\t */";
+		}
+
+		$lines[] = "\tpublic function {$methodName}(" . implode(', ', $signatureParts) . '): ' . $return['phpType'];
+		$lines[] = "\t{";
+		if ($invoke)
+		{
+			$lines[] = "\t\treturn \$this->get(" . implode(', ', $argumentNames) . ');';
+			$lines[] = "\t}";
+			return $lines;
+		}
+
+		foreach ($this->sortMethodGroupVariants($methodGroup['variants']) as $variant)
+		{
+			$condition = $this->renderVariantCondition($variant, $descriptor['arguments']);
+			$lines[] = "\t\tif ({$condition})";
+			$lines[] = "\t\t{";
+			$lines = array_merge($lines, $this->indentLines($this->renderVerbMethodExecution($variant), 3));
+			$lines[] = "\t\t}";
+		}
+
+		$lines[] = "\t\tthrow new RuntimeException(" . $this->exportValue(
+			"No matching endpoint variant for {$methodGroup['name']}()."
+		) . ');';
 		$lines[] = "\t}";
 
 		return $lines;
@@ -1295,28 +1291,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 	 */
 	private function describeMethodArguments(array $parameters, ?array $body, array $return): array
 	{
-		$arguments = [];
-		$order = 0;
-
-		foreach ($parameters as $parameter)
-		{
-			$arguments[] = [
-				'name' => $parameter['name'],
-				'required' => (bool)$parameter['required'],
-				'type' => $parameter['type'],
-				'order' => $order++,
-			];
-		}
-		if ($body !== null)
-		{
-			$arguments[] = [
-				'name' => $body['name'],
-				'required' => (bool)$body['required'],
-				'type' => $body['type'],
-				'order' => $order++,
-			];
-		}
-
+		$arguments = $this->collectMethodArguments($parameters, $body);
 		usort($arguments, static function (array $left, array $right): int {
 			$requiredCompare = ((int)$right['required']) <=> ((int)$left['required']);
 			if ($requiredCompare !== 0)
@@ -1342,7 +1317,7 @@ class Builder extends BaseBuilder implements BuilderInterface
 			}
 		}
 
-		if ($return['docType'] !== null && ($return['phpType'] === 'array' || $return['phpType'] === 'mixed'))
+		if ($return['docType'] !== null && $return['docType'] !== $return['phpType'])
 		{
 			$docLines[] = "\t * @return {$return['docType']}";
 		}
@@ -1446,12 +1421,597 @@ class Builder extends BaseBuilder implements BuilderInterface
 		{
 			return "mixed \${$name} = null";
 		}
-		if ($typeHint[0] !== '?')
-		{
-			$typeHint = '?' . $typeHint;
-		}
+
+		$typeHint = $this->makeNullableTypeHint($typeHint);
 
 		return "{$typeHint} \${$name} = null";
+	}
+
+	/**
+	 * @param array<string, mixed> $existing
+	 * @param array<string, mixed> $incoming
+	 * @return array<string, mixed>
+	 */
+	private function mergeModuleOwnVerbSpec(array $existing, array $incoming): array
+	{
+		foreach ($incoming['methods'] as $methodName => $methodGroup)
+		{
+			if (!isset($existing['methods'][$methodName]))
+			{
+				$existing['methods'][$methodName] = $methodGroup;
+				continue;
+			}
+
+			$existing['methods'][$methodName]['variants'] = array_merge(
+				$existing['methods'][$methodName]['variants'],
+				$methodGroup['variants']
+			);
+		}
+
+		ksort($existing['methods']);
+		$existing['invokeMethod'] = $this->resolveModuleOwnInvokeMethod($existing['methods']);
+
+		return $existing;
+	}
+
+	/**
+	 * @param array<string, array<string, mixed>> $operations
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function groupModuleOwnMethods(array $operations): array
+	{
+		$methods = [];
+		foreach ($operations as $methodName => $method)
+		{
+			$methods[$methodName] = [
+				'name' => $methodName,
+				'variants' => [$method],
+			];
+		}
+		ksort($methods);
+
+		return $methods;
+	}
+
+	/**
+	 * @param array<string, array<string, mixed>> $methods
+	 * @return array<string, mixed>|null
+	 */
+	private function resolveModuleOwnInvokeMethod(array $methods): ?array
+	{
+		if (count($methods) !== 1 || !isset($methods['get']))
+		{
+			return null;
+		}
+
+		return $methods['get'];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $variants
+	 * @return array<string, mixed>
+	 */
+	private function describeMethodGroup(array $methodGroup): array
+	{
+		$variants = $methodGroup['variants'];
+		$arity = count($variants);
+		$arguments = [];
+
+		foreach ($variants as $index => $variant)
+		{
+			foreach ($this->collectMethodArguments($variant['parameters'], $variant['body']) as $argument)
+			{
+				$key = $argument['key'];
+				if (!isset($arguments[$key]))
+				{
+					$arguments[$key] = $argument + [
+						'presentCount' => 0,
+						'requiredCount' => 0,
+						'typeHints' => [],
+						'docTypes' => [],
+						'variants' => [],
+					];
+				}
+
+				$arguments[$key]['presentCount']++;
+				$arguments[$key]['requiredCount'] += $argument['required'] ? 1 : 0;
+				$arguments[$key]['typeHints'][] = $argument['type']['typeHint'];
+				$arguments[$key]['docTypes'][] = $argument['type']['docType'];
+				$arguments[$key]['variants'][$index] = true;
+			}
+		}
+
+		foreach ($arguments as &$argument)
+		{
+			$argument['required'] = $argument['presentCount'] === $arity
+				&& $argument['requiredCount'] === $arity;
+			$argument['type']['typeHint'] = $this->mergeTypeHints($argument['typeHints']);
+			$argument['type']['docType'] = $this->mergeDocTypes($argument['docTypes']);
+			unset($argument['presentCount'], $argument['requiredCount'], $argument['typeHints'], $argument['docTypes']);
+		}
+		unset($argument);
+
+		$arguments = array_values($arguments);
+		usort($arguments, fn(array $left, array $right): int => $this->compareMethodArguments($left, $right));
+
+		$signatureParts = [];
+		$docLines = [];
+		$argumentNames = [];
+		foreach ($arguments as $argument)
+		{
+			$type = $argument['type'];
+			$signatureParts[] = $this->renderArgument($argument['name'], $type['typeHint'], (bool)$argument['required']);
+			$argumentNames[] = '$' . $argument['name'];
+			if ($type['docType'] !== null && $type['docType'] !== $type['typeHint'])
+			{
+				$docLines[] = "\t * @param {$type['docType']} \${$argument['name']}";
+			}
+		}
+
+		$return = $this->mergeMethodReturns($variants);
+		if ($return['docType'] !== null && $return['docType'] !== $return['phpType'])
+		{
+			$docLines[] = "\t * @return {$return['docType']}";
+		}
+
+		return [
+			'arguments' => $arguments,
+			'signatureParts' => $signatureParts,
+			'docLines' => $docLines,
+			'argumentNames' => $argumentNames,
+			'return' => $return,
+		];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $parameters
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function collectMethodArguments(array $parameters, ?array $body): array
+	{
+		$arguments = [];
+		$order = 0;
+
+		foreach ($parameters as $parameter)
+		{
+			$arguments[] = [
+				'key' => $parameter['location'] . ':' . $parameter['originalName'],
+				'name' => $parameter['name'],
+				'location' => $parameter['location'],
+				'required' => (bool)$parameter['required'],
+				'type' => $parameter['type'],
+				'order' => $order++,
+			];
+		}
+		if ($body !== null)
+		{
+			$arguments[] = [
+				'key' => 'body:' . $body['name'],
+				'name' => $body['name'],
+				'location' => 'body',
+				'required' => (bool)$body['required'],
+				'type' => $body['type'],
+				'order' => $order++,
+			];
+		}
+
+		return $arguments;
+	}
+
+	private function compareMethodArguments(array $left, array $right): int
+	{
+		$priorityCompare = $this->methodArgumentPriority($left['location']) <=> $this->methodArgumentPriority($right['location']);
+		if ($priorityCompare !== 0)
+		{
+			return $priorityCompare;
+		}
+
+		$requiredCompare = ((int)$right['required']) <=> ((int)$left['required']);
+		if ($requiredCompare !== 0)
+		{
+			return $requiredCompare;
+		}
+
+		return $left['order'] <=> $right['order'];
+	}
+
+	private function methodArgumentPriority(string $location): int
+	{
+		return match ($location)
+		{
+			'path' => 0,
+			'query' => 1,
+			'header' => 2,
+			'body' => 3,
+			default => 4,
+		};
+	}
+
+	private function makeNullableTypeHint(string $typeHint): string
+	{
+		if ($typeHint === 'mixed' || $typeHint === '?array' || $typeHint[0] === '?')
+		{
+			return $typeHint;
+		}
+
+		if (str_contains($typeHint, '|'))
+		{
+			$types = explode('|', $typeHint);
+			if (!in_array('null', $types, true))
+			{
+				$types[] = 'null';
+			}
+
+			return implode('|', $types);
+		}
+
+		return '?' . $typeHint;
+	}
+
+	/**
+	 * @param array<int, string> $typeHints
+	 */
+	private function mergeTypeHints(array $typeHints): string
+	{
+		$types = [];
+		foreach ($typeHints as $typeHint)
+		{
+			if ($typeHint === '' || $typeHint === 'mixed')
+			{
+				return 'mixed';
+			}
+
+			foreach (explode('|', ltrim($typeHint, '?')) as $type)
+			{
+				$type = trim($type);
+				if ($type === '' || $type === 'null')
+				{
+					continue;
+				}
+				$types[$type] = true;
+			}
+		}
+
+		if ($types === [])
+		{
+			return 'mixed';
+		}
+
+		ksort($types);
+		return implode('|', array_keys($types));
+	}
+
+	/**
+	 * @param array<int, string|null> $docTypes
+	 */
+	private function mergeDocTypes(array $docTypes): ?string
+	{
+		$types = [];
+		foreach ($docTypes as $docType)
+		{
+			if ($docType === null || $docType === '')
+			{
+				continue;
+			}
+			if ($docType === 'mixed')
+			{
+				return 'mixed';
+			}
+			$types[$docType] = true;
+		}
+
+		if ($types === [])
+		{
+			return null;
+		}
+		if (count($types) === 1)
+		{
+			return (string)array_key_first($types);
+		}
+
+		ksort($types);
+		return implode('|', array_keys($types));
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $variants
+	 * @return array<string, string|null>
+	 */
+	private function mergeMethodReturns(array $variants): array
+	{
+		$phpTypes = [];
+		$docTypes = [];
+
+		foreach ($variants as $variant)
+		{
+			$phpType = (string)$variant['return']['phpType'];
+			if ($phpType === 'mixed')
+			{
+				return [
+					'phpType' => 'mixed',
+					'docType' => 'mixed',
+				];
+			}
+			$phpTypes[$phpType] = true;
+			$docTypes[] = $variant['return']['docType'];
+		}
+
+		ksort($phpTypes);
+		$phpType = implode('|', array_keys($phpTypes));
+
+		return [
+			'phpType' => $phpType,
+			'docType' => $this->mergeDocTypes($docTypes) ?? $phpType,
+		];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $variants
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function sortMethodGroupVariants(array $variants): array
+	{
+		usort($variants, function (array $left, array $right): int {
+			$requiredCompare = $this->countRequiredMethodArguments($right) <=> $this->countRequiredMethodArguments($left);
+			if ($requiredCompare !== 0)
+			{
+				return $requiredCompare;
+			}
+
+			$pathCompare = $this->countPathMethodArguments($right) <=> $this->countPathMethodArguments($left);
+			if ($pathCompare !== 0)
+			{
+				return $pathCompare;
+			}
+
+			$totalCompare = $this->countMethodArguments($right) <=> $this->countMethodArguments($left);
+			if ($totalCompare !== 0)
+			{
+				return $totalCompare;
+			}
+
+			return strcmp($left['path'], $right['path']);
+		});
+
+		return $this->pruneUnreachableMethodVariants($variants);
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $variants
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function pruneUnreachableMethodVariants(array $variants): array
+	{
+		$filtered = [];
+		foreach ($variants as $variant)
+		{
+			$covered = false;
+			foreach ($filtered as $candidate)
+			{
+				if ($this->variantCoversVariant($candidate, $variant))
+				{
+					$covered = true;
+					break;
+				}
+			}
+
+			if (!$covered)
+			{
+				$filtered[] = $variant;
+			}
+		}
+
+		return $filtered;
+	}
+
+	private function countMethodArguments(array $method): int
+	{
+		return count($method['parameters']) + ($method['body'] === null ? 0 : 1);
+	}
+
+	private function countRequiredMethodArguments(array $method): int
+	{
+		$required = 0;
+		foreach ($method['parameters'] as $parameter)
+		{
+			$required += $parameter['required'] ? 1 : 0;
+		}
+		if ($method['body'] !== null && $method['body']['required'])
+		{
+			$required++;
+		}
+
+		return $required;
+	}
+
+	private function countPathMethodArguments(array $method): int
+	{
+		$count = 0;
+		foreach ($method['parameters'] as $parameter)
+		{
+			if ($parameter['location'] === 'path')
+			{
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	private function variantCoversVariant(array $candidate, array $variant): bool
+	{
+		$candidateArguments = $this->indexMethodArgumentsByKey($candidate);
+		$variantArguments = $this->indexMethodArgumentsByKey($variant);
+
+		foreach ($variantArguments as $key => $argument)
+		{
+			if (!isset($candidateArguments[$key]))
+			{
+				return false;
+			}
+		}
+
+		foreach ($candidateArguments as $key => $argument)
+		{
+			if (!$argument['required'])
+			{
+				continue;
+			}
+			if (!isset($variantArguments[$key]) || !$variantArguments[$key]['required'])
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @param array<string, mixed> $method
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function indexMethodArgumentsByKey(array $method): array
+	{
+		$arguments = [];
+		foreach ($this->collectMethodArguments($method['parameters'], $method['body']) as $argument)
+		{
+			$arguments[$argument['key']] = $argument;
+		}
+
+		return $arguments;
+	}
+
+	/**
+	 * @param array<string, mixed> $method
+	 * @param array<int, array<string, mixed>> $arguments
+	 */
+	private function renderVariantCondition(array $method, array $arguments): string
+	{
+		$variantArguments = [];
+		foreach ($this->collectMethodArguments($method['parameters'], $method['body']) as $argument)
+		{
+			$variantArguments[$argument['key']] = $argument;
+		}
+
+		$conditions = [];
+		foreach ($arguments as $argument)
+		{
+			$name = '$' . $argument['name'];
+			if (!isset($variantArguments[$argument['key']]))
+			{
+				$conditions[] = "{$name} === null";
+				continue;
+			}
+			if ($variantArguments[$argument['key']]['required'])
+			{
+				$conditions[] = "{$name} !== null";
+			}
+		}
+
+		return $conditions === [] ? 'true' : implode(' && ', $conditions);
+	}
+
+	/**
+	 * @param array<string, mixed> $method
+	 * @return string[]
+	 */
+	private function renderVerbMethodExecution(array $method): array
+	{
+		$parameters = $method['parameters'];
+		$body = $method['body'];
+		$return = $method['return'];
+		$paramsBuild = [];
+		$headersBuild = [];
+
+		foreach ($parameters as $parameter)
+		{
+			$targetName = $parameter['location'] === 'header' ? 'headers' : 'params';
+			if ($parameter['required'])
+			{
+				${$targetName . 'Build'}[] = "\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+				continue;
+			}
+
+			${$targetName . 'Build'}[] = "if (\${$parameter['name']} !== null)";
+			${$targetName . 'Build'}[] = '{';
+			${$targetName . 'Build'}[] = "\t\${$targetName}['{$parameter['originalName']}'] = \${$parameter['name']};";
+			${$targetName . 'Build'}[] = '}';
+		}
+
+		$bodyArgument = $body === null ? '[]' : '$' . $body['name'];
+		$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument}, \$headers)";
+
+		$lines = [
+			'$params = [];',
+			'$headers = [];',
+		];
+		foreach ($paramsBuild as $paramsLine)
+		{
+			$lines[] = $paramsLine;
+		}
+		foreach ($headersBuild as $headerLine)
+		{
+			$lines[] = $headerLine;
+		}
+
+		switch ($return['mode'])
+		{
+			case 'model':
+				$lines[] = "\$data = \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
+				$lines[] = "return \$this->client->getHydrator()->hydrate(new {$return['modelFqcn']}(), \$data);";
+				break;
+
+			case 'modelList':
+				$lines[] = "\$data = \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
+				$lines[] = "return Items::hydrate(\$this->client->getHydrator(), {$return['modelFqcn']}::class, \$data);";
+				break;
+
+			case 'rawArray':
+				$lines[] = "return \$this->expectArrayResponse({$requestCall}, '{$method['path']}', '{$method['name']}');";
+				break;
+
+			case 'scalar':
+				$lines[] = "\$data = {$requestCall};";
+				$lines = array_merge($lines, $this->renderScalarGuardUnindented($return, $method['path'], $method['name']));
+				$lines[] = 'return $data;';
+				break;
+
+			default:
+				$lines[] = "return {$requestCall};";
+				break;
+		}
+
+		return $lines;
+	}
+
+	/**
+	 * @param array<string, mixed> $return
+	 * @return string[]
+	 */
+	private function renderScalarGuardUnindented(array $return, string $path, string $methodName): array
+	{
+		return array_map(
+			static fn(string $line): string => preg_replace('/^\t\t/', '', $line, 1) ?? $line,
+			$this->renderScalarGuard($return, $path, $methodName)
+		);
+	}
+
+	/**
+	 * @param string[] $lines
+	 * @return string[]
+	 */
+	private function indentLines(array $lines, int $level): array
+	{
+		$prefix = str_repeat("\t", $level);
+
+		return array_map(static function (string $line) use ($prefix): string {
+			if ($line === '')
+			{
+				return $line;
+			}
+
+			return $prefix . $line;
+		}, $lines);
 	}
 
 	/**
