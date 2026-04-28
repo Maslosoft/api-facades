@@ -14,6 +14,7 @@ use Maslosoft\ApiFacades\Base\GenericClient;
 use Maslosoft\ApiFacades\Exceptions\BadParamsException;
 use Maslosoft\ApiFacades\Exceptions\Http\TransportException;
 use Maslosoft\ApiFacades\Exceptions\Http\UnauthorizedException;
+use Maslosoft\ApiFacades\Models\Generic\UploadFile;
 use Tests\Models\Clients\TestingClient;
 use Tests\Support\Unit;
 
@@ -44,8 +45,8 @@ class GenericClientTest extends Unit
 
 		parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
 		$this->assertSame(['include' => 'roles', 'page' => '2'], $query);
-		$this->assertContains('Accept: application/json', $client->lastRequest['headers']);
-		$this->assertNotContains('Content-Type: application/json', $client->lastRequest['headers']);
+		$this->assertSame('application/json', $client->lastRequest['headers']['Accept'] ?? null);
+		$this->assertArrayNotHasKey('Content-Type', $client->lastRequest['headers']);
 	}
 
 	public function testEncodesJsonBodyForWriteMethods(): void
@@ -59,7 +60,7 @@ class GenericClientTest extends Unit
 		$this->assertSame(['status' => 'ok'], $data);
 		$this->assertSame('POST', $client->lastRequest['method']);
 		$this->assertSame('{"name":"Ada"}', $client->lastRequest['body']);
-		$this->assertContains('Content-Type: application/json', $client->lastRequest['headers']);
+		$this->assertSame('application/json', $client->lastRequest['headers']['Content-Type'] ?? null);
 	}
 
 	public function testMissingPathParamThrows(): void
@@ -84,8 +85,8 @@ class GenericClientTest extends Unit
 		]);
 
 		$this->assertSame(['ok' => true], $data);
-		$this->assertContains('X-Api-Key: secret', $client->lastRequest['headers']);
-		$this->assertContains('X-Trace-Id: abc-123', $client->lastRequest['headers']);
+		$this->assertSame('secret', $client->lastRequest['headers']['X-Api-Key'] ?? null);
+		$this->assertSame('abc-123', $client->lastRequest['headers']['X-Trace-Id'] ?? null);
 	}
 
 	public function testMergesHeadersFromOverride(): void
@@ -107,8 +108,41 @@ class GenericClientTest extends Unit
 		]);
 
 		$this->assertSame(['ok' => true], $data);
-		$this->assertContains('Authorization: Bearer token', $client->lastRequest['headers']);
-		$this->assertContains('X-Trace-Id: abc-123', $client->lastRequest['headers']);
+		$this->assertSame('Bearer token', $client->lastRequest['headers']['Authorization'] ?? null);
+		$this->assertSame('abc-123', $client->lastRequest['headers']['X-Trace-Id'] ?? null);
+	}
+
+	public function testBuildsMultipartRequestBodyWithoutTransformingFileContents(): void
+	{
+		$client = new TestingClient();
+		$client->baseUrl = 'https://api.example.com';
+		$client->response = '{"ok":true}';
+
+		$file = 'UERGREFUQQ==';
+		$upload = UploadFile::create(file: $file, name: 'my-invoice.pdf');
+
+		$data = $client->getData('/api/upload', 'post', [], $upload, [], [
+			'mode' => 'multipart',
+			'contentType' => 'multipart/form-data',
+			'fields' => [
+				[
+					'name' => 'file',
+					'required' => true,
+					'contentType' => 'application/octet-stream',
+					'filename' => 'file',
+				],
+			],
+		]);
+
+		$this->assertSame(['ok' => true], $data);
+		$this->assertSame('POST', $client->lastRequest['method']);
+		$this->assertStringContainsString(
+			'multipart/form-data; boundary=',
+			$this->formatHeadersForAssertion($client->lastRequest['headers'])
+		);
+		$this->assertStringContainsString('name="file"; filename="my-invoice.pdf"', (string)$client->lastRequest['body']);
+		$this->assertStringContainsString('Content-Type: application/octet-stream', (string)$client->lastRequest['body']);
+		$this->assertStringContainsString($file, (string)$client->lastRequest['body']);
 	}
 
 	public function testUnauthorizedResponseThrowsSpecificException(): void
@@ -173,5 +207,32 @@ class GenericClientTest extends Unit
 		$client->setHttpClient($guzzle);
 
 		return $client;
+	}
+
+	/**
+	 * @param array<int|string, mixed> $headers
+	 */
+	private function formatHeadersForAssertion(array $headers): string
+	{
+		$formatted = [];
+		foreach ($headers as $name => $value)
+		{
+			if (is_int($name))
+			{
+				$formatted[] = (string)$value;
+				continue;
+			}
+			if (is_array($value))
+			{
+				foreach ($value as $item)
+				{
+					$formatted[] = $name . ': ' . (string)$item;
+				}
+				continue;
+			}
+			$formatted[] = $name . ': ' . (string)$value;
+		}
+
+		return implode("\n", $formatted);
 	}
 }

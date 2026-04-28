@@ -7,6 +7,7 @@ namespace Tests\Unit\Generate;
 use FilesystemIterator;
 use Maslosoft\ApiFacades\Build\Builder;
 use Maslosoft\ApiFacades\Config;
+use Maslosoft\ApiFacades\Models\Generic\UploadFile;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionMethod;
@@ -66,7 +67,7 @@ class BuilderImprovementsTest extends Unit
 		$this->assertSame(['source' => 'root'], $client->invoices->get());
 		$this->assertSame(['a', 'b'], $client->invoices->items->get());
 		$this->assertSame(['ok' => true], $client->upload->post(['name' => 'Ada'], 'secret'));
-		$this->assertContains('x-api-key: secret', $client->captured['headers']);
+		$this->assertSame('secret', $client->captured['headers']['x-api-key'] ?? null);
 		$this->assertSame('{"name":"Ada"}', $client->captured['body']);
 
 		$moduleMethod = new ReflectionMethod(\Acme\Improvements01\Modules\InvoicesModule::class, 'get');
@@ -144,6 +145,32 @@ class BuilderImprovementsTest extends Unit
 		$this->assertNull($getParameters[0]->getDefaultValue());
 		$this->assertSame('skip', $getParameters[1]->getName());
 		$this->assertTrue(method_exists(\Acme\Improvements02\Modules\InvoicesModule::class, 'delete'));
+	}
+
+	public function testGeneratesUploadFileTypedRequestModels(): void
+	{
+		$tempRoot = sys_get_temp_dir() . '/api-facades-improvements-' . bin2hex(random_bytes(6));
+		mkdir($tempRoot, 0777, true);
+
+		$openApiPath = $tempRoot . '/openapi.json';
+		$configPath = $tempRoot . '/api-facades.yml';
+
+		file_put_contents($openApiPath, json_encode($this->specWithMultipartBodyModel(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+		file_put_contents($configPath, $this->configYaml('Acme\\Improvements03', 'Client03'));
+
+		$builder = new Builder(Config::load($configPath));
+		$builder->build();
+
+		$this->assertFileExists($tempRoot . '/generated/Models/ReimbursementUploadRequest.php');
+		$this->assertFileExists($tempRoot . '/generated/Verbs/ReimbursementVerb.php');
+
+		$this->requirePhpFiles($tempRoot . '/generated');
+
+		$verbMethod = new ReflectionMethod(\Acme\Improvements03\Verbs\ReimbursementVerb::class, 'post');
+		$this->assertSame(\Acme\Improvements03\Models\ReimbursementUploadRequest::class, $verbMethod->getParameters()[0]->getType()?->getName());
+
+		$fileProperty = new \ReflectionProperty(\Acme\Improvements03\Models\ReimbursementUploadRequest::class, 'file');
+		$this->assertSame(UploadFile::class, $fileProperty->getType()?->getName());
 	}
 
 	/**
@@ -376,6 +403,71 @@ class BuilderImprovementsTest extends Unit
 								],
 							],
 						],
+					],
+				],
+			],
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function specWithMultipartBodyModel(): array
+	{
+		return [
+			'openapi' => '3.1.0',
+			'info' => [
+				'title' => 'Multipart Body Model',
+				'version' => '1.0.0',
+			],
+			'paths' => [
+				'/api/reimbursement' => [
+					'post' => [
+						'tags' => ['reimbursement'],
+						'operationId' => 'submit_reimbursement',
+						'requestBody' => [
+							'required' => true,
+							'content' => [
+								'multipart/form-data' => [
+									'schema' => [
+										'$ref' => '#/components/schemas/ReimbursementUploadRequest',
+									],
+								],
+							],
+						],
+						'responses' => [
+							'200' => [
+								'description' => 'ok',
+								'content' => [
+									'application/json' => [
+										'schema' => [
+											'type' => 'object',
+											'properties' => [
+												'ok' => ['type' => 'boolean'],
+											],
+											'required' => ['ok'],
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+			'components' => [
+				'schemas' => [
+					'ReimbursementUploadRequest' => [
+						'type' => 'object',
+						'properties' => [
+							'file' => [
+								'type' => 'string',
+								'contentMediaType' => 'application/octet-stream',
+							],
+							'note' => [
+								'type' => 'string',
+							],
+						],
+						'required' => ['file', 'note'],
 					],
 				],
 			],
