@@ -386,10 +386,27 @@ class Builder extends BaseBuilder implements BuilderInterface
 			return null;
 		}
 
-		$schema = $this->findContentSchema((array)($requestBody['content'] ?? []));
-		if ($schema === null)
+		$content = $this->findContentDescriptor((array)($requestBody['content'] ?? []));
+		if ($content === null)
 		{
 			return null;
+		}
+
+		$schema = $content['schema'];
+		$contentType = $content['contentType'];
+		$transport = $this->describeRequestBodyTransport($contentType, $schema, $models);
+		$flattened = $this->describeFlattenedMultipartBodyParameter(
+			$schema,
+			$contentType,
+			(bool)($requestBody['required'] ?? false),
+			$models,
+			$usedModelNames
+		);
+
+		if ($flattened !== null)
+		{
+			$flattened['transport'] = $transport;
+			return $flattened;
 		}
 
 		return [
@@ -398,6 +415,56 @@ class Builder extends BaseBuilder implements BuilderInterface
 			'location' => 'body',
 			'required' => (bool)($requestBody['required'] ?? false),
 			'type' => $this->describeInputSchema($schema, $models, $usedModelNames),
+			'transport' => $transport,
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 * @param array<string, Model> $models
+	 * @param array<string, bool>  $usedModelNames
+	 * @return array<string, mixed>|null
+	 */
+	private function describeFlattenedMultipartBodyParameter(
+		array $schema,
+		string $contentType,
+		bool $requestRequired,
+		array $models,
+		array &$usedModelNames
+	): ?array
+	{
+		if (strtolower($contentType) !== 'multipart/form-data')
+		{
+			return null;
+		}
+
+		$resolvedSchema = $this->resolveSchemaReference($schema, $models);
+		if ($this->primarySchemaType($resolvedSchema) !== 'object')
+		{
+			return null;
+		}
+
+		$properties = (array)($resolvedSchema['properties'] ?? []);
+		if (count($properties) !== 1)
+		{
+			return null;
+		}
+
+		$propertyName = (string)array_key_first($properties);
+		$propertySchema = $properties[$propertyName] ?? null;
+		if (!is_array($propertySchema))
+		{
+			return null;
+		}
+
+		$required = $requestRequired || in_array($propertyName, (array)($resolvedSchema['required'] ?? []), true);
+
+		return [
+			'name' => $this->normalizeIdentifier($propertyName, 'body'),
+			'originalName' => $propertyName,
+			'location' => 'body',
+			'required' => $required,
+			'type' => $this->describeInputSchema($propertySchema, $models, $usedModelNames),
 		];
 	}
 
@@ -465,6 +532,15 @@ class Builder extends BaseBuilder implements BuilderInterface
 	 */
 	private function findContentSchema(array $content): ?array
 	{
+		return $this->findContentDescriptor($content)['schema'] ?? null;
+	}
+
+	/**
+	 * @param array<string, mixed> $content
+	 * @return array{contentType: string, schema: array<string, mixed>}|null
+	 */
+	private function findContentDescriptor(array $content): ?array
+	{
 		if ($content === [])
 		{
 			return null;
@@ -472,7 +548,10 @@ class Builder extends BaseBuilder implements BuilderInterface
 
 		if (isset($content['application/json']['schema']) && is_array($content['application/json']['schema']))
 		{
-			return $content['application/json']['schema'];
+			return [
+				'contentType' => 'application/json',
+				'schema' => $content['application/json']['schema'],
+			];
 		}
 
 		foreach ($content as $contentType => $entry)
@@ -481,21 +560,125 @@ class Builder extends BaseBuilder implements BuilderInterface
 			{
 				continue;
 			}
-			if (str_contains((string)$contentType, 'json') && isset($entry['schema']) && is_array($entry['schema']))
+			if (str_contains(strtolower((string)$contentType), 'json') && isset($entry['schema']) && is_array($entry['schema']))
 			{
-				return $entry['schema'];
+				return [
+					'contentType' => (string)$contentType,
+					'schema' => $entry['schema'],
+				];
 			}
 		}
 
-		foreach ($content as $entry)
+		foreach ($content as $contentType => $entry)
 		{
-			if (is_array($entry) && isset($entry['schema']) && is_array($entry['schema']))
+			if (!is_array($entry) || !isset($entry['schema']) || !is_array($entry['schema']))
 			{
-				return $entry['schema'];
+				continue;
 			}
+
+			return [
+				'contentType' => (string)$contentType,
+				'schema' => $entry['schema'],
+			];
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 * @param array<string, Model> $models
+	 * @return array<string, mixed>
+	 */
+	private function describeRequestBodyTransport(string $contentType, array $schema, array $models): array
+	{
+		$contentType = strtolower($contentType);
+
+		if ($contentType === 'multipart/form-data')
+		{
+			return [
+				'mode' => 'multipart',
+				'contentType' => $contentType,
+				'fields' => $this->describeMultipartFields($schema, $models),
+			];
+		}
+		if ($contentType === 'application/x-www-form-urlencoded')
+		{
+			return [
+				'mode' => 'form',
+				'contentType' => $contentType,
+			];
+		}
+		if (str_contains($contentType, 'json'))
+		{
+			return [
+				'mode' => 'json',
+				'contentType' => $contentType,
+			];
+		}
+
+		return [
+			'mode' => 'raw',
+			'contentType' => $contentType,
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 * @param array<string, Model> $models
+	 * @return array<int, array{name: string, required: bool, contentType: string}>
+	 */
+	private function describeMultipartFields(array $schema, array $models): array
+	{
+		$resolvedSchema = $this->resolveSchemaReference($schema, $models);
+		if ($this->primarySchemaType($resolvedSchema) !== 'object')
+		{
+			return [];
+		}
+
+		$required = array_fill_keys((array)($resolvedSchema['required'] ?? []), true);
+		$fields = [];
+		foreach ((array)($resolvedSchema['properties'] ?? []) as $name => $propertySchema)
+		{
+			if (!is_array($propertySchema))
+			{
+				continue;
+			}
+			$fields[] = [
+				'name' => (string)$name,
+				'required' => isset($required[$name]),
+				'contentType' => (string)($propertySchema['contentMediaType'] ?? ''),
+			];
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * @param array<string, mixed> $schema
+	 * @param array<string, Model> $models
+	 * @return array<string, mixed>
+	 */
+	private function resolveSchemaReference(array $schema, array $models): array
+	{
+		$seen = [];
+		while (isset($schema['$ref']))
+		{
+			$name = $this->schemaNameFromRef((string)$schema['$ref']);
+			if ($name === '' || isset($seen[$name]))
+			{
+				break;
+			}
+			$seen[$name] = true;
+			$model = $models[$name] ?? null;
+			if ($model === null)
+			{
+				break;
+			}
+			$schema = $model->schema;
+		}
+
+		return $schema;
 	}
 
 	/**
@@ -1938,8 +2121,16 @@ class Builder extends BaseBuilder implements BuilderInterface
 			${$targetName . 'Build'}[] = '}';
 		}
 
-		$bodyArgument = $body === null ? '[]' : '$' . $body['name'];
-		$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument}, \$headers)";
+		if ($body === null)
+		{
+			$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, [], \$headers)";
+		}
+		else
+		{
+			$bodyArgument = '$' . $body['name'];
+			$requestOptions = $this->exportValue($body['transport'] ?? []);
+			$requestCall = "\$this->requestData('{$method['path']}', '{$method['name']}', \$params, {$bodyArgument}, \$headers, {$requestOptions})";
+		}
 
 		$lines = [
 			'$params = [];',

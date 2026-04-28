@@ -66,7 +66,7 @@ class BuilderImprovementsTest extends Unit
 		$this->assertSame(['source' => 'root'], $client->invoices->get());
 		$this->assertSame(['a', 'b'], $client->invoices->items->get());
 		$this->assertSame(['ok' => true], $client->upload->post(['name' => 'Ada'], 'secret'));
-		$this->assertContains('x-api-key: secret', $client->captured['headers']);
+		$this->assertSame('secret', $client->captured['headers']['x-api-key'] ?? null);
 		$this->assertSame('{"name":"Ada"}', $client->captured['body']);
 
 		$moduleMethod = new ReflectionMethod(\Acme\Improvements01\Modules\InvoicesModule::class, 'get');

@@ -47,6 +47,7 @@ class FullBuilderTest extends Unit
 					'/api/invoices/|GET' => '{"mode":"collection"}',
 					'/api/invoices/1|GET' => '{"id":1,"filename":"invoice-1.pdf","upload_date":"2026-01-01","status":"new"}',
 					'/api/invoices/1|DELETE' => '{"deleted":1}',
+					'/api/invoices/upload|POST' => '{"id":2,"filename":"uploaded.pdf","upload_date":"2026-01-02","status":"queued","file_path":"/tmp/uploaded.pdf"}',
 					default => throw new \RuntimeException("Unexpected request {$method} {$path}."),
 				};
 			}
@@ -63,6 +64,19 @@ class FullBuilderTest extends Unit
 		$this->assertSame('invoice-1.pdf', $detail->filename);
 		$this->assertSame(['deleted' => 1], $client->invoices->delete(1));
 
+		$file = 'UERGREFUQQ==';
+		$uploaded = $client->invoices->upload->post($file);
+		$this->assertInstanceOf(\Acme\Test03\Models\InvoiceResponse::class, $uploaded);
+		$this->assertSame(2, $uploaded->id);
+		$this->assertSame('uploaded.pdf', $uploaded->filename);
+		$this->assertStringContainsString(
+			'multipart/form-data; boundary=',
+			$this->formatHeadersForAssertion($client->captured['headers'])
+		);
+		$this->assertStringContainsString('name="file"', (string)$client->captured['body']);
+		$this->assertStringContainsString('Content-Type: application/octet-stream', (string)$client->captured['body']);
+		$this->assertStringContainsString($file, (string)$client->captured['body']);
+
 		$getMethod = new ReflectionMethod(\Acme\Test03\Modules\InvoicesModule::class, 'get');
 		$getParameters = $getMethod->getParameters();
 		$this->assertCount(16, $getParameters);
@@ -70,6 +84,10 @@ class FullBuilderTest extends Unit
 		$this->assertTrue($getParameters[0]->isDefaultValueAvailable());
 		$this->assertNull($getParameters[0]->getDefaultValue());
 		$this->assertTrue(method_exists(\Acme\Test03\Modules\InvoicesModule::class, 'delete'));
+
+		$uploadMethod = new ReflectionMethod(\Acme\Test03\Verbs\Invoices\UploadVerb::class, 'post');
+		$this->assertSame('file', $uploadMethod->getParameters()[0]->getName());
+		$this->assertSame('string', $uploadMethod->getParameters()[0]->getType()?->getName());
 	}
 
 	private function requirePhpFiles(string $path): void
@@ -86,5 +104,32 @@ class FullBuilderTest extends Unit
 			}
 			require_once $file->getPathname();
 		}
+	}
+
+	/**
+	 * @param array<int|string, mixed> $headers
+	 */
+	private function formatHeadersForAssertion(array $headers): string
+	{
+		$formatted = [];
+		foreach ($headers as $name => $value)
+		{
+			if (is_int($name))
+			{
+				$formatted[] = (string)$value;
+				continue;
+			}
+			if (is_array($value))
+			{
+				foreach ($value as $item)
+				{
+					$formatted[] = $name . ': ' . (string)$item;
+				}
+				continue;
+			}
+			$formatted[] = $name . ': ' . (string)$value;
+		}
+
+		return implode("\n", $formatted);
 	}
 }

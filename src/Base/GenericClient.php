@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
+use GuzzleHttp\Psr7\MultipartStream;
 use Maslosoft\ApiFacades\Exceptions\BadParamsException;
 use Maslosoft\ApiFacades\Exceptions\Http\ClientException;
 use Maslosoft\ApiFacades\Exceptions\Http\ForbiddenException;
@@ -62,16 +63,25 @@ abstract class GenericClient
 	 * $client->getData('/api/users/{id}', 'get', ['id' => 1]);
 	 * ```
 	 *
-	 * The optional `$body` parameter can be used to provide request body as PHP, JSON convertible array.
+	 * The optional `$body` parameter can be used to provide request payload data. Encoding and transport details
+	 * are controlled by the generated `$request` metadata argument.
 	 *
 	 * @param string $endpoint Endpoint URL, relative to the base URL, as defined in openapi specification, including parameters in curly braces.
 	 * @param string $method Method as per HTTP specification, e.g. 'get', 'post', 'put', 'delete'
 	 * @param array $params Array key-values matching parameter names in endpoint URL.
-	 * @param mixed $body Arbitrary data to be sent as request body, the only requirement is that it can be converted to JSON.
+	 * @param mixed $body Arbitrary data to be sent as request body.
 	 * @param array<string, scalar|\BackedEnum|null> $headers Additional request headers.
+	 * @param array<string, mixed> $request Request transport metadata generated from the OpenAPI request body definition.
 	 * @return mixed
 	 */
-	public function getData(string $endpoint, string $method, array $params = [], mixed $body = [], array $headers = []): mixed
+	public function getData(
+		string $endpoint,
+		string $method,
+		array $params = [],
+		mixed $body = [],
+		array $headers = [],
+		array $request = []
+	): mixed
 	{
 		$method = strtoupper($method);
 		$endpoint = $this->applyParamsToEndpoint($endpoint, $params);
@@ -93,15 +103,11 @@ abstract class GenericClient
 		$payload = null;
 		if ($body !== [] && $body !== null)
 		{
-			try
+			[$payload, $bodyHeaders] = $this->prepareRequestBody($body, $request);
+			foreach ($bodyHeaders as $name => $value)
 			{
-				$payload = json_encode($this->normalizeBody($body), JSON_THROW_ON_ERROR);
+				$requestHeaders[$name] = $value;
 			}
-			catch (JsonException $exception)
-			{
-				throw new BadParamsException('Request body could not be encoded as JSON.', 0, $exception);
-			}
-			$requestHeaders['Content-Type'] = 'application/json';
 		}
 
 		$headers = array_merge($this->getHeaders(), $headers);
@@ -219,6 +225,234 @@ abstract class GenericClient
 		return $this->httpClient ??= new Client();
 	}
 
+	/**
+	 * @param array<string, mixed> $request
+	 * @return array{0: string, 1: array<string, string>}
+	 */
+	private function prepareRequestBody(mixed $body, array $request): array
+	{
+		$mode = strtolower((string)($request['mode'] ?? 'json'));
+		$contentType = (string)($request['contentType'] ?? '');
+
+		return match ($mode)
+		{
+			'multipart' => $this->prepareMultipartBody($body, $request),
+			'form' => $this->prepareFormBody($body, $contentType === '' ? 'application/x-www-form-urlencoded' : $contentType),
+			'raw' => $this->prepareRawBody($body, $contentType),
+			default => $this->prepareJsonBody($body, $contentType === '' ? 'application/json' : $contentType),
+		};
+	}
+
+	/**
+	 * @return array{0: string, 1: array<string, string>}
+	 */
+	private function prepareJsonBody(mixed $body, string $contentType): array
+	{
+		try
+		{
+			$payload = json_encode($this->normalizeBody($body), JSON_THROW_ON_ERROR);
+		}
+		catch (JsonException $exception)
+		{
+			throw new BadParamsException('Request body could not be encoded as JSON.', 0, $exception);
+		}
+
+		if (!is_string($payload))
+		{
+			throw new BadParamsException('Request body could not be encoded as JSON.');
+		}
+
+		return [$payload, ['Content-Type' => $contentType]];
+	}
+
+	/**
+	 * @param array<string, mixed> $request
+	 * @return array{0: string, 1: array<string, string>}
+	 */
+	private function prepareMultipartBody(mixed $body, array $request): array
+	{
+		$fields = isset($request['fields']) && is_array($request['fields']) ? $request['fields'] : [];
+		$normalized = $this->normalizeBody($body);
+		$data = $this->normalizeMultipartBodyData($normalized, $fields);
+		$parts = [];
+		$knownFields = [];
+
+		foreach ($fields as $field)
+		{
+			if (!is_array($field) || !isset($field['name']))
+			{
+				continue;
+			}
+
+			$name = (string)$field['name'];
+			$knownFields[$name] = true;
+			if (!array_key_exists($name, $data))
+			{
+				if (($field['required'] ?? false) === true)
+				{
+					throw new BadParamsException("Missing required multipart field `{$name}`.");
+				}
+				continue;
+			}
+
+			$value = $data[$name];
+			if ($value === null)
+			{
+				if (($field['required'] ?? false) === true)
+				{
+					throw new BadParamsException("Multipart field `{$name}` cannot be null.");
+				}
+				continue;
+			}
+
+			$parts[] = $this->createMultipartPart($name, $value, (string)($field['contentType'] ?? ''));
+		}
+
+		foreach ($data as $name => $value)
+		{
+			if (isset($knownFields[$name]) || $value === null)
+			{
+				continue;
+			}
+
+			$parts[] = $this->createMultipartPart((string)$name, $value, '');
+		}
+
+		$stream = new MultipartStream($parts);
+
+		return [
+			(string)$stream,
+			['Content-Type' => 'multipart/form-data; boundary=' . $stream->getBoundary()],
+		];
+	}
+
+	/**
+	 * @return array{0: string, 1: array<string, string>}
+	 */
+	private function prepareFormBody(mixed $body, string $contentType): array
+	{
+		$normalized = $this->normalizeBody($body);
+		if (!is_array($normalized))
+		{
+			throw new BadParamsException('Form request body must be an array or object.');
+		}
+
+		return [
+			http_build_query($normalized),
+			['Content-Type' => $contentType],
+		];
+	}
+
+	/**
+	 * @return array{0: string, 1: array<string, string>}
+	 */
+	private function prepareRawBody(mixed $body, string $contentType): array
+	{
+		$payload = $this->normalizeRawBody($body);
+		$headers = [];
+		if ($contentType !== '')
+		{
+			$headers['Content-Type'] = $contentType;
+		}
+
+		return [$payload, $headers];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $fields
+	 * @return array<string, mixed>
+	 */
+	private function normalizeMultipartBodyData(mixed $body, array $fields): array
+	{
+		if (is_array($body))
+		{
+			return $body;
+		}
+
+		if (count($fields) === 1 && isset($fields[0]['name']))
+		{
+			return [(string)$fields[0]['name'] => $body];
+		}
+
+		throw new BadParamsException('Multipart request body must be an array or object.');
+	}
+
+	/**
+	 * @return array{name: string, contents: string, headers?: array<string, string>}
+	 */
+	private function createMultipartPart(string $name, mixed $value, string $contentType): array
+	{
+		$part = [
+			'name' => $name,
+			'contents' => $this->normalizeMultipartValue($value),
+		];
+
+		if ($contentType !== '')
+		{
+			$part['headers'] = ['Content-Type' => $contentType];
+		}
+
+		return $part;
+	}
+
+	private function normalizeRawBody(mixed $value): string
+	{
+		if ($value instanceof BackedEnum)
+		{
+			return (string)$value->value;
+		}
+		if (is_string($value))
+		{
+			return $value;
+		}
+		if (is_int($value) || is_float($value))
+		{
+			return (string)$value;
+		}
+		if (is_bool($value))
+		{
+			return $value ? '1' : '0';
+		}
+
+		throw new BadParamsException('Raw request body must be a scalar or stringable enum value.');
+	}
+
+	private function normalizeMultipartValue(mixed $value): string
+	{
+		if ($value instanceof BackedEnum)
+		{
+			return (string)$value->value;
+		}
+		if (is_string($value))
+		{
+			return $value;
+		}
+		if (is_int($value) || is_float($value))
+		{
+			return (string)$value;
+		}
+		if (is_bool($value))
+		{
+			return $value ? '1' : '0';
+		}
+
+		try
+		{
+			$payload = json_encode($this->normalizeBody($value), JSON_THROW_ON_ERROR);
+		}
+		catch (JsonException $exception)
+		{
+			throw new BadParamsException('Multipart field could not be encoded as JSON.', 0, $exception);
+		}
+
+		if (!is_string($payload))
+		{
+			throw new BadParamsException('Multipart field could not be encoded as JSON.');
+		}
+
+		return $payload;
+	}
+
 	private function normalizeBody(mixed $value): mixed
 	{
 		if ($value instanceof BackedEnum)
@@ -252,7 +486,7 @@ abstract class GenericClient
 
 	/**
 	 * @param array<string, scalar|BackedEnum|null> $headers
-	 * @return string[]
+	 * @return array<string, string>
 	 */
 	private function normalizeHeaders(array $headers): array
 	{
@@ -279,56 +513,6 @@ abstract class GenericClient
 
 		return $result;
 	}
-
-	/**
-	 * @param string[] $headers
-	 * @return array<string, string|list<string>>
-	 */
-	private function headerLinesToMap(array $headers): array
-	{
-		$result = [];
-
-		foreach ($headers as $header)
-		{
-			$header = trim((string)$header);
-			if ($header === '')
-			{
-				continue;
-			}
-
-			$parts = explode(':', $header, 2);
-			if (count($parts) !== 2)
-			{
-				continue;
-			}
-
-			$name = trim($parts[0]);
-			$value = ltrim($parts[1]);
-			if ($name === '')
-			{
-				continue;
-			}
-
-			if (!isset($result[$name]))
-			{
-				$result[$name] = $value;
-				continue;
-			}
-
-			$current = $result[$name];
-			if (is_array($current))
-			{
-				$current[] = $value;
-				$result[$name] = $current;
-				continue;
-			}
-
-			$result[$name] = [$current, $value];
-		}
-
-		return $result;
-	}
-
 	private function formatTransportMessage(string $method, string $url, string $message): string
 	{
 		$prefix = strtoupper($method) . " {$url} failed";
