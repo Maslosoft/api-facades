@@ -16,6 +16,9 @@
             "src/Logging.php"
         ]
     },
+    "bin": [
+        "bin/api-facades"
+    ],
     "autoload-dev": {
         "psr-4": {
             "Tests\\Models\\": "tests/Models"
@@ -28,11 +31,13 @@
         }
     ],
     "require": {
+        "guzzlehttp/guzzle": "^7",
         "php": ">=8.3",
         "maslosoft/cli-shared": "*",
         "maslosoft/embedi": "^2|^3|^4",
         "maslosoft/light": "^1|^2|^4",
         "monolog/monolog": ">=2",
+        "symfony/console": ">=6",
         "symfony/yaml": ">2.6"
     },
     "suggest": {

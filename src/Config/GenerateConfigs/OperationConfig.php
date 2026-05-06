@@ -25,14 +25,50 @@ class OperationConfig implements ConfigAware
 	{
 		$this->config = $config;
 		$this->baseClass = $data['baseClass'] ?? GenericOperation::class;
-		$namerCfg = $data['namer'];
+		$namerCfg = (array)($data['namer'] ?? []);
 		$namer = EmbeDi::fly()->apply($namerCfg);
 		assert($namer instanceof OperationNamer);
 		$this->namer = $namer;
 
-		foreach ($namerCfg['processors'] ?? [] as $processorName => $processorCfg)
+		foreach ($this->normalizeProcessorConfigs((array)($namerCfg['processors'] ?? [])) as $processorName => $processorCfg)
 		{
-			$this->namer->processors[$processorName] = EmbeDi::fly()->apply($processorCfg);
+			$processor = EmbeDi::fly()->apply($processorCfg);
+			if ($processor === null)
+			{
+				continue;
+			}
+			$this->namer->processors[$processorName] = $processor;
 		}
+	}
+
+	/**
+	 * @param array<string, mixed> $configs
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function normalizeProcessorConfigs(array $configs): array
+	{
+		$normalized = [];
+
+		foreach ($configs as $name => $config)
+		{
+			if (!is_array($config))
+			{
+				continue;
+			}
+			if (isset($config['class']))
+			{
+				$normalized[(string)$name] = $config;
+				continue;
+			}
+			if (isset($config['processors']) && is_array($config['processors']))
+			{
+				foreach ($this->normalizeProcessorConfigs($config['processors']) as $childName => $childConfig)
+				{
+					$normalized[$childName] = $childConfig;
+				}
+			}
+		}
+
+		return $normalized;
 	}
 }

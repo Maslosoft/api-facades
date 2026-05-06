@@ -51,7 +51,11 @@ class OutputConfig implements ConfigAware
 	public function __construct(Config $config, array $data = [])
 	{
 		$this->namespace = (string)($data['namespace'] ?? '');
-		$this->class = (string)($data['class'] ?? '');
+		$this->class = (string)($data['class'] ?? self::DefaultClass);
+		if ($this->class === '')
+		{
+			$this->class = self::DefaultClass;
+		}
 		$this->discoverOutput = (bool)($data['discoverOutput'] ?? false);
 		if($this->discoverOutput)
 		{

@@ -1,0 +1,11 @@
+input:
+  location: openapi.03.json
+output:
+  # Adjust to requirements
+  namespace: Acme\Test03
+  # API facade Root class
+  class: Client03
+  # Discover directory based on PSR-4 composer.json autoload
+  discoverOutput: false
+  # If not empty, this output directory will be used
+  path: "generated.03"
